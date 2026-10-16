@@ -1,0 +1,10 @@
+{
+  "name": "movie-cache",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Auto-sync movie cache with 50MB size limit",
+  "type": "commonjs",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}
