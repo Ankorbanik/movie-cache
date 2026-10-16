@@ -26,7 +26,12 @@ const CATEGORIES = [
 ];
 
 let keyIdx = 0;
-function nextKey() { return KEYS[keyIdx++ % KEYS.length]; }
+function nextKey() {
+  const idx = keyIdx % KEYS.length;
+  const k = KEYS[keyIdx++ % KEYS.length];
+  console.log(`Using key #${idx + 1}/${KEYS.length} ending ...${k.slice(-4)}`);
+  return k;
+}
 
 async function fetchCategory(cat, page) {
   for (let attempt = 0; attempt < 3; attempt++) {
