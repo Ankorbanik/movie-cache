@@ -1,0 +1,409 @@
+{
+  "page": 1,
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/clePZhqOSzNyjfuFBpOrziLEFzb.jpg",
+      "genre_ids": [
+        28,
+        27,
+        53
+      ],
+      "id": 1284046,
+      "title": "Onslaught",
+      "original_language": "en",
+      "original_title": "Onslaught",
+      "overview": "When a rogue squad of genetically engineered super soldiers break loose in the desert, a badass Army sniper must unleash hell to protect her young daughter.",
+      "popularity": 112.014,
+      "poster_path": "/cOGtvhc6Ij9KvzM6jZsfQyg0B0O.jpg",
+      "release_date": "2026-09-02",
+      "softcore": false,
+      "video": false,
+      "vote_average": 5.745,
+      "vote_count": 110
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/dqmMWNWfLnExDRpMtIMqI97GQFR.jpg",
+      "genre_ids": [
+        27,
+        9648,
+        878
+      ],
+      "id": 1083381,
+      "title": "Backrooms",
+      "original_language": "en",
+      "original_title": "Backrooms",
+      "overview": "A strange doorway appears in the basement of a furniture showroom.",
+      "popularity": 80.1002,
+      "poster_path": "/rhGx6E3qRNMgj3i5su2oukNHwIQ.jpg",
+      "release_date": "2026-05-27",
+      "softcore": false,
+      "video": false,
+      "vote_average": 7,
+      "vote_count": 3740
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/6h7w8R4BA7vubEmEEW5vYEjuoz6.jpg",
+      "genre_ids": [
+        18,
+        53
+      ],
+      "id": 1317288,
+      "title": "Marty Supreme",
+      "original_language": "en",
+      "original_title": "Marty Supreme",
+      "overview": "Marty Mauser, a young man with a dream no one respects, goes to hell and back in pursuit of greatness.",
+      "popularity": 47.4058,
+      "poster_path": "/lYWEXbQgRTR4ZQleSXAgRbxAjvq.jpg",
+      "release_date": "2025-12-19",
+      "softcore": false,
+      "video": false,
+      "vote_average": 7.366,
+      "vote_count": 2285
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/eGljNfNCrPhFYG2RXXmmE0OKu5.jpg",
+      "genre_ids": [
+        18,
+        53,
+        80
+      ],
+      "id": 473033,
+      "title": "Uncut Gems",
+      "original_language": "en",
+      "original_title": "Uncut Gems",
+      "overview": "A charismatic New York City jeweler always on the lookout for the next big score makes a series of high-stakes bets that could lead to the windfall of a lifetime. Howard must perform a precarious high-wire act, balancing business, family, and encroaching adversaries on all sides in his relentless pursuit of the ultimate win.",
+      "popularity": 32.889,
+      "poster_path": "/6XN1vxHc7kUSqNWtaQKN45J5x2v.jpg",
+      "release_date": "2019-12-13",
+      "softcore": false,
+      "video": false,
+      "vote_average": 7.171,
+      "vote_count": 5636
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/fIwiFha3WPu5nHkBeMQ4GzEk0Hv.jpg",
+      "genre_ids": [
+        28,
+        12,
+        878
+      ],
+      "id": 545611,
+      "title": "Everything Everywhere All at Once",
+      "original_language": "en",
+      "original_title": "Everything Everywhere All at Once",
+      "overview": "An aging Chinese immigrant is swept up in an insane adventure, where she alone can save what's important to her by connecting with the lives she could have led in other universes.",
+      "popularity": 33.99,
+      "poster_path": "/u68AjlvlutfEIcpmbYpKcdi09ut.jpg",
+      "release_date": "2022-03-24",
+      "softcore": false,
+      "video": false,
+      "vote_average": 7.717,
+      "vote_count": 8531
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/t2SXZ7KLriaLyf5QT8Iar6fSOGp.jpg",
+      "genre_ids": [
+        10752,
+        28,
+        18
+      ],
+      "id": 929590,
+      "title": "Civil War",
+      "original_language": "en",
+      "original_title": "Civil War",
+      "overview": "In the near future, a group of war journalists attempt to survive while reporting the truth as the United States stands on the brink of civil war.",
+      "popularity": 32.1961,
+      "poster_path": "/sh7Rg8Er3tFcN9BpKIPOMvALgZd.jpg",
+      "release_date": "2024-04-10",
+      "softcore": false,
+      "video": false,
+      "vote_average": 6.8,
+      "vote_count": 4646
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/4E5RVsSUG1A4Adwbqupu5w6kofZ.jpg",
+      "genre_ids": [
+        18,
+        53
+      ],
+      "id": 1375441,
+      "title": "Primetime",
+      "original_language": "en",
+      "original_title": "Primetime",
+      "overview": "In 2006, To Catch a Predator host Chris Hansen sets out to make television history. When a high stakes operation goes fatally wrong, his veneered dream of fame curdles into a nightmare of performative justice.",
+      "popularity": 46.0691,
+      "poster_path": "/lmrulvLbmaejTix1YaMxo1oGhH1.jpg",
+      "release_date": "2026-09-23",
+      "softcore": false,
+      "video": false,
+      "vote_average": 6.867,
+      "vote_count": 132
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/ag66gJCiZ06q1GSJuQlhGLi3Udx.jpg",
+      "genre_ids": [
+        53,
+        27
+      ],
+      "id": 1138194,
+      "title": "Heretic",
+      "original_language": "en",
+      "original_title": "Heretic",
+      "overview": "Two young missionaries are forced to prove their faith when they knock on the wrong door and are greeted by a diabolical Mr. Reed, becoming ensnared in his deadly game of cat-and-mouse.",
+      "popularity": 31.6025,
+      "poster_path": "/fr96XzlzsONrQrGfdLMiwtQjott.jpg",
+      "release_date": "2024-10-31",
+      "softcore": false,
+      "video": false,
+      "vote_average": 6.965,
+      "vote_count": 2960
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/saErQCTkKbqiggCJbSltBMDD4oy.jpg",
+      "genre_ids": [
+        80,
+        18
+      ],
+      "id": 1242434,
+      "title": "Highest 2 Lowest",
+      "original_language": "en",
+      "original_title": "Highest 2 Lowest",
+      "overview": "When a titan music mogul, widely known as having the \"best ears in the business\", is targeted with a ransom plot, he is jammed up in a life-or-death moral dilemma.",
+      "popularity": 27.0659,
+      "poster_path": "/RFQtinuiHhOnbmJaCn3uzegCYF.jpg",
+      "release_date": "2025-08-14",
+      "softcore": false,
+      "video": false,
+      "vote_average": 5.5,
+      "vote_count": 548
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/o375tDNib7tihlkWdtLW1fQhNL1.jpg",
+      "genre_ids": [
+        27
+      ],
+      "id": 760104,
+      "title": "X",
+      "original_language": "en",
+      "original_title": "X",
+      "overview": "In 1979, a group of young filmmakers set out to make an adult film in rural Texas, but when their reclusive, elderly hosts catch them in the act, the cast find themselves fighting for their lives.",
+      "popularity": 34.283,
+      "poster_path": "/lopZSVtXzhFY603E9OqF7O1YKsh.jpg",
+      "release_date": "2022-03-17",
+      "softcore": false,
+      "video": false,
+      "vote_average": 6.699,
+      "vote_count": 4188
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/1oKLEA9JOhvaBwLpqjROisvWMy7.jpg",
+      "genre_ids": [
+        10749,
+        35,
+        18
+      ],
+      "id": 1325734,
+      "title": "The Drama",
+      "original_language": "en",
+      "original_title": "The Drama",
+      "overview": "A happily engaged couple is put to the test when an unexpected turn sends their wedding week off the rails.",
+      "popularity": 41.6727,
+      "poster_path": "/rnIOUhzwJDfgQakx8EjoNyItKgs.jpg",
+      "release_date": "2026-04-01",
+      "softcore": false,
+      "video": false,
+      "vote_average": 6.897,
+      "vote_count": 1954
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/jm1oD3eB08LImSwL1LrzF9AJQ5b.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 376867,
+      "title": "Moonlight",
+      "original_language": "en",
+      "original_title": "Moonlight",
+      "overview": "The tender, heartbreaking story of a young man’s struggle to find himself, told across three defining chapters in his life as he experiences the ecstasy, pain, and beauty of falling in love, while grappling with his own sexuality.",
+      "popularity": 30.1606,
+      "poster_path": "/qLnfEmPrDjJfPyyddLJPkXmshkp.jpg",
+      "release_date": "2016-10-21",
+      "softcore": false,
+      "video": false,
+      "vote_average": 7.356,
+      "vote_count": 7724
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/2IIKts2A9vnUdM9tTC76B8tDmuZ.jpg",
+      "genre_ids": [
+        27
+      ],
+      "id": 1151031,
+      "title": "Bring Her Back",
+      "original_language": "en",
+      "original_title": "Bring Her Back",
+      "overview": "Following the death of their father, a brother and sister are sent to live with a foster mother, only to learn that she is hiding a terrifying secret.",
+      "popularity": 31.5663,
+      "poster_path": "/1Q3GlCXGYWELifxANYZ5OVMRVZl.jpg",
+      "release_date": "2025-05-19",
+      "softcore": false,
+      "video": false,
+      "vote_average": 7.32,
+      "vote_count": 2010
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/2WRe1y5S1jGWTKUcSPPmD1Ixq56.jpg",
+      "genre_ids": [
+        35,
+        14
+      ],
+      "id": 823482,
+      "title": "Dream Scenario",
+      "original_language": "en",
+      "original_title": "Dream Scenario",
+      "overview": "Hapless family man Paul Matthews finds his life turned upside down when millions of strangers suddenly start seeing him in their dreams. But when his nighttime appearances take a nightmarish turn, Paul is forced to navigate his newfound stardom.",
+      "popularity": 27.9589,
+      "poster_path": "/eMaAi8wTI5wON8pp33w3BDuGyZ8.jpg",
+      "release_date": "2023-11-10",
+      "softcore": false,
+      "video": false,
+      "vote_average": 6.647,
+      "vote_count": 1478
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/7HR38hMBl23lf38MAN63y4pKsHz.jpg",
+      "genre_ids": [
+        18,
+        10749
+      ],
+      "id": 666277,
+      "title": "Past Lives",
+      "original_language": "en",
+      "original_title": "Past Lives",
+      "overview": "After decades apart, childhood friends Nora and Hae Sung are reunited in New York for one fateful weekend as they confront notions of destiny, love, and the choices that make a life.",
+      "popularity": 32.2801,
+      "poster_path": "/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg",
+      "release_date": "2023-06-02",
+      "softcore": false,
+      "video": false,
+      "vote_average": 7.696,
+      "vote_count": 2502
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/fdzpbJ0xdyjMUY4DqN6cOpESA1X.jpg",
+      "genre_ids": [
+        27,
+        18
+      ],
+      "id": 949423,
+      "title": "Pearl",
+      "original_language": "en",
+      "original_title": "Pearl",
+      "overview": "Trapped on her family’s isolated farm, Pearl must tend to her ailing father under the bitter and overbearing watch of her devout mother. Lusting for a glamorous life like she’s seen in the movies, Pearl’s ambitions, temptations, and repressions collide.",
+      "popularity": 23.0495,
+      "poster_path": "/z5uIG81pXyHKg7cUFIu84Wjn4NS.jpg",
+      "release_date": "2022-09-16",
+      "softcore": false,
+      "video": false,
+      "vote_average": 7.232,
+      "vote_count": 2796
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/4rLaMBcCJ1pMq72vCulBMPsbAyh.jpg",
+      "genre_ids": [
+        27,
+        14,
+        35
+      ],
+      "id": 1153714,
+      "title": "Death of a Unicorn",
+      "original_language": "en",
+      "original_title": "Death of a Unicorn",
+      "overview": "A father and daughter accidentally hit and kill a unicorn while en route to a weekend retreat, where his billionaire boss seeks to exploit the creature’s miraculous curative properties.",
+      "popularity": 27.0441,
+      "poster_path": "/xWlF2i51zUq7BUq4iJte1g9NyIM.jpg",
+      "release_date": "2025-03-17",
+      "softcore": false,
+      "video": false,
+      "vote_average": 6.377,
+      "vote_count": 953
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/xVZijHBpoQCuH1RjLDmDHjwrCzM.jpg",
+      "genre_ids": [
+        18
+      ],
+      "id": 588367,
+      "title": "The Humans",
+      "original_language": "en",
+      "original_title": "The Humans",
+      "overview": "Erik Blake has gathered three generations of his Pennsylvania family to celebrate Thanksgiving at his daughter’s apartment in lower Manhattan. As darkness falls outside and eerie things start to go bump in the night, the group’s deepest fears are laid bare.",
+      "popularity": 20.0495,
+      "poster_path": "/gQsDWmkvzzJxlrc3HCqkfQRH11.jpg",
+      "release_date": "2021-11-24",
+      "softcore": false,
+      "video": false,
+      "vote_average": 6.1,
+      "vote_count": 232
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/BOeORWljjIPGuCwUgLls24ctF3.jpg",
+      "genre_ids": [
+        18,
+        35
+      ],
+      "id": 437586,
+      "title": "mid90s",
+      "original_language": "en",
+      "original_title": "mid90s",
+      "overview": "In 1990s Los Angeles, a 13-year-old spends his summer navigating between a troubled home life and a crew of new friends he meets at a skate shop.",
+      "popularity": 15.1986,
+      "poster_path": "/9Tw0Y3DK5kGIU9X1yw3Q9gCkOlb.jpg",
+      "release_date": "2018-10-19",
+      "softcore": false,
+      "video": false,
+      "vote_average": 7.457,
+      "vote_count": 1879
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/kffxjVKaxjFM6utstRUFKbB8DZk.jpg",
+      "genre_ids": [
+        99
+      ],
+      "id": 860278,
+      "title": "Stephen Curry: Underrated",
+      "original_language": "en",
+      "original_title": "Stephen Curry: Underrated",
+      "overview": "The remarkable coming-of-age story of Stephen Curry—one of the most influential, dynamic, and unexpected players in basketball history—and his rise from an undersized college player to a four-time NBA champion.",
+      "popularity": 17.1919,
+      "poster_path": "/mFpnGiDrY9Brz4FQLKBKX1uCbl.jpg",
+      "release_date": "2023-07-21",
+      "softcore": false,
+      "video": false,
+      "vote_average": 7.491,
+      "vote_count": 107
+    }
+  ],
+  "total_pages": 10,
+  "total_results": 183
+}
