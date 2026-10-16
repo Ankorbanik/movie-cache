@@ -11,7 +11,7 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -41,17 +41,19 @@ jobs:
             echo "✅ Loaded previous cache"
             du -sh ../src/cache || true
           else
-            echo "ℹ️  No cache-data branch yet (first run)"
+            echo "ℹ️  First run — no previous cache"
           fi
 
-      - name: Manage size (delete old if over 50MB)
+      - name: Manage size (90 MB limit)
         working-directory: src
         run: node scripts/manage-size.js
 
-      - name: Sync fresh data from TMDB
+      - name: Sync fresh data (all content types)
         working-directory: src
         env:
           TMDB_KEYS: ${{ secrets.TMDB_KEYS }}
+          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
+          WORKER_SECRET: ${{ secrets.WORKER_SECRET }}
         run: node scripts/sync-all.js
 
       - name: Prepare clean deploy repo
