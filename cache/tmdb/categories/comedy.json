@@ -3,7 +3,7 @@
   "results": [
     {
       "adult": false,
-      "backdrop_path": "/y6RIuwuxLG3Nsb37KUj5yatnTIp.jpg",
+      "backdrop_path": "/jdJsnhHfkIi3J7jwfiCFT4gXNx5.jpg",
       "genre_ids": [
         28,
         35,
@@ -19,7 +19,7 @@
       "release_date": "2026-10-05",
       "softcore": false,
       "video": false,
-      "vote_average": 7.899,
+      "vote_average": 7.9,
       "vote_count": 336
     },
     {
@@ -61,8 +61,8 @@
       "release_date": "2026-06-17",
       "softcore": false,
       "video": false,
-      "vote_average": 8.289,
-      "vote_count": 2618
+      "vote_average": 8.288,
+      "vote_count": 2619
     },
     {
       "adult": false,
@@ -125,7 +125,7 @@
       "release_date": "2026-09-09",
       "softcore": false,
       "video": false,
-      "vote_average": 6.672,
+      "vote_average": 6.7,
       "vote_count": 180
     },
     {

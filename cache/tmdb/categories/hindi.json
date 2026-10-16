@@ -143,8 +143,8 @@
       "release_date": "2009-12-23",
       "softcore": false,
       "video": false,
-      "vote_average": 8.013,
-      "vote_count": 2869
+      "vote_average": 8.012,
+      "vote_count": 2870
     },
     {
       "adult": false,
@@ -417,5 +417,5 @@
     }
   ],
   "total_pages": 529,
-  "total_results": 10577
+  "total_results": 10578
 }

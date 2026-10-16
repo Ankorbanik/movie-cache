@@ -24,8 +24,8 @@
       "first_air_date": "2005-04-22",
       "softcore": false,
       "name": "Doraemon",
-      "vote_average": 8.1,
-      "vote_count": 249
+      "vote_average": 8.098,
+      "vote_count": 250
     },
     {
       "adult": false,
@@ -138,7 +138,7 @@
       "softcore": false,
       "name": "Naruto",
       "vote_average": 8.363,
-      "vote_count": 6155
+      "vote_count": 6157
     },
     {
       "adult": false,
@@ -207,7 +207,7 @@
       "softcore": false,
       "name": "Dragon Ball Z",
       "vote_average": 8.382,
-      "vote_count": 5038
+      "vote_count": 5039
     },
     {
       "adult": false,
@@ -307,29 +307,6 @@
     },
     {
       "adult": false,
-      "backdrop_path": "/8phLVFEXOe02JgFmH9ldn3j4tXW.jpg",
-      "genre_ids": [
-        16,
-        10759,
-        10765
-      ],
-      "id": 312359,
-      "origin_country": [
-        "JP"
-      ],
-      "original_language": "ja",
-      "original_name": "ドラゴンボール超 ビルス",
-      "overview": "When Beerus, the God of Destruction, awakens in search of a worthy rival, Goku and his friends face an epic battle to stop him from destroying Earth.\n\nRemastered and re-edited version of Dragon Ball Super.",
-      "popularity": 93.7106,
-      "poster_path": "/AojgldgsOlzZV8ahyOzaiAjJWvV.jpg",
-      "first_air_date": "2026-10-11",
-      "softcore": false,
-      "name": "Dragon Ball Super: Beerus",
-      "vote_average": 9.775,
-      "vote_count": 180
-    },
-    {
-      "adult": false,
       "backdrop_path": "/5mUYDoFjDlPmDvnUWSknhYjGBBh.jpg",
       "genre_ids": [
         16,
@@ -350,6 +327,29 @@
       "name": "JoJo's Bizarre Adventure",
       "vote_average": 8.546,
       "vote_count": 1677
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/8phLVFEXOe02JgFmH9ldn3j4tXW.jpg",
+      "genre_ids": [
+        16,
+        10759,
+        10765
+      ],
+      "id": 312359,
+      "origin_country": [
+        "JP"
+      ],
+      "original_language": "ja",
+      "original_name": "ドラゴンボール超 ビルス",
+      "overview": "When Beerus, the God of Destruction, awakens in search of a worthy rival, Goku and his friends face an epic battle to stop him from destroying Earth.\n\nRemastered and re-edited version of Dragon Ball Super.",
+      "popularity": 93.7106,
+      "poster_path": "/AojgldgsOlzZV8ahyOzaiAjJWvV.jpg",
+      "first_air_date": "2026-10-11",
+      "softcore": false,
+      "name": "Dragon Ball Super: Beerus",
+      "vote_average": 9.8,
+      "vote_count": 181
     },
     {
       "adult": false,
