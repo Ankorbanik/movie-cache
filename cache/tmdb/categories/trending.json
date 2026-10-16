@@ -28,6 +28,28 @@
     },
     {
       "adult": false,
+      "backdrop_path": "/4tjxYg2AbOzzG9G1YuiT2NzYhlH.jpg",
+      "id": 969681,
+      "title": "Spider-Man: Brand New Day",
+      "original_title": "Spider-Man: Brand New Day",
+      "overview": "Fighting crime full-time as Spider-Man in a world that doesn't remember him—and the pressure of seeing his old friends move on without him—sparks a change in Peter Parker he may not have the power to control. But that transformation might also be the only thing that can stop a shocking new threat to the city and those he loves - a powerful villain no one can even see.",
+      "poster_path": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
+      "media_type": "movie",
+      "original_language": "en",
+      "genre_ids": [
+        878,
+        28,
+        12
+      ],
+      "popularity": 713.4232,
+      "release_date": "2026-07-29",
+      "softcore": false,
+      "video": false,
+      "vote_average": 8.466,
+      "vote_count": 5528
+    },
+    {
+      "adult": false,
       "backdrop_path": "/uoXXbN2PrOxH6UKyP7kYwmGpAAP.jpg",
       "id": 213375,
       "name": "VisionQuest",
@@ -43,7 +65,7 @@
       "popularity": 290.3975,
       "first_air_date": "2026-10-13",
       "softcore": false,
-      "vote_average": 9.106,
+      "vote_average": 9.1,
       "vote_count": 71,
       "origin_country": [
         "US"
@@ -51,26 +73,46 @@
     },
     {
       "adult": false,
-      "backdrop_path": "/c1RP38PbwfCaQjSSotniS01uvuY.jpg",
-      "id": 213562,
-      "name": "Crystal Lake",
-      "original_name": "Crystal Lake",
-      "overview": "Single mother Pam Voorhees has been unable to shake her grief after her young, sickly son Jason tragically drowned in the town lake almost a year before. When two strangers arrive at Pam's door digging into her past, a disturbing chain of events is set into motion, leaving the townspeople of Crystal Lake wondering: just who is Pam Voorhees?",
-      "poster_path": "/sIj9WcA1LkcjGbYjrbfV3pGegbF.jpg",
-      "media_type": "tv",
+      "backdrop_path": "/tzoarEu7TsG959upiELyYPm5kO9.jpg",
+      "id": 1236045,
+      "title": "Animals",
+      "original_title": "Animals",
+      "overview": "When the son of an L.A. mayoral candidate is kidnapped, he and his wife have a few hours to come up with the ransom payment. With most of their money spent on his political campaign, they have to get their hands dirty and expose a side of their lives they never intended to see the light of day.",
+      "poster_path": "/iISM36voS1E8gX9BM0DVK0kgi3E.jpg",
+      "media_type": "movie",
       "original_language": "en",
       "genre_ids": [
-        9648,
+        53,
         18
       ],
-      "popularity": 88.775,
-      "first_air_date": "2026-10-15",
+      "popularity": 262.6055,
+      "release_date": "2026-10-09",
       "softcore": false,
-      "vote_average": 6.5,
-      "vote_count": 11,
-      "origin_country": [
-        "US"
-      ]
+      "video": false,
+      "vote_average": 7.186,
+      "vote_count": 379
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/y6RIuwuxLG3Nsb37KUj5yatnTIp.jpg",
+      "id": 1148365,
+      "title": "Matchbox the Movie",
+      "original_title": "Matchbox the Movie",
+      "overview": "When a group of former childhood friends reconnect, their reunion takes a wild turn as they stumble upon a dangerous international plot—and must save the world.",
+      "poster_path": "/lFKA4GMz36dImEy3DQPdPF7G4V9.jpg",
+      "media_type": "movie",
+      "original_language": "en",
+      "genre_ids": [
+        28,
+        35,
+        12
+      ],
+      "popularity": 391.6431,
+      "release_date": "2026-10-05",
+      "softcore": false,
+      "video": false,
+      "vote_average": 7.899,
+      "vote_count": 336
     },
     {
       "adult": false,
@@ -99,49 +141,6 @@
     },
     {
       "adult": false,
-      "backdrop_path": "/y6RIuwuxLG3Nsb37KUj5yatnTIp.jpg",
-      "id": 1148365,
-      "title": "Matchbox the Movie",
-      "original_title": "Matchbox the Movie",
-      "overview": "When a group of former childhood friends reconnect, their reunion takes a wild turn as they stumble upon a dangerous international plot—and must save the world.",
-      "poster_path": "/lFKA4GMz36dImEy3DQPdPF7G4V9.jpg",
-      "media_type": "movie",
-      "original_language": "en",
-      "genre_ids": [
-        28,
-        35,
-        12
-      ],
-      "popularity": 391.6431,
-      "release_date": "2026-10-05",
-      "softcore": false,
-      "video": false,
-      "vote_average": 7.899,
-      "vote_count": 335
-    },
-    {
-      "adult": false,
-      "backdrop_path": "/tzoarEu7TsG959upiELyYPm5kO9.jpg",
-      "id": 1236045,
-      "title": "Animals",
-      "original_title": "Animals",
-      "overview": "When the son of an L.A. mayoral candidate is kidnapped, he and his wife have a few hours to come up with the ransom payment. With most of their money spent on his political campaign, they have to get their hands dirty and expose a side of their lives they never intended to see the light of day.",
-      "poster_path": "/iISM36voS1E8gX9BM0DVK0kgi3E.jpg",
-      "media_type": "movie",
-      "original_language": "en",
-      "genre_ids": [
-        53,
-        18
-      ],
-      "popularity": 262.6055,
-      "release_date": "2026-10-09",
-      "softcore": false,
-      "video": false,
-      "vote_average": 7.189,
-      "vote_count": 378
-    },
-    {
-      "adult": false,
       "backdrop_path": "/ujUwzNV8ZkOzZonvhhHsc9KOKDf.jpg",
       "id": 1058424,
       "title": "Hope",
@@ -159,72 +158,8 @@
       "release_date": "2026-07-15",
       "softcore": false,
       "video": false,
-      "vote_average": 7.1,
-      "vote_count": 183
-    },
-    {
-      "adult": false,
-      "backdrop_path": "/4tjxYg2AbOzzG9G1YuiT2NzYhlH.jpg",
-      "id": 969681,
-      "title": "Spider-Man: Brand New Day",
-      "original_title": "Spider-Man: Brand New Day",
-      "overview": "Fighting crime full-time as Spider-Man in a world that doesn't remember him—and the pressure of seeing his old friends move on without him—sparks a change in Peter Parker he may not have the power to control. But that transformation might also be the only thing that can stop a shocking new threat to the city and those he loves - a powerful villain no one can even see.",
-      "poster_path": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
-      "media_type": "movie",
-      "original_language": "en",
-      "genre_ids": [
-        878,
-        28,
-        12
-      ],
-      "popularity": 713.4232,
-      "release_date": "2026-07-29",
-      "softcore": false,
-      "video": false,
-      "vote_average": 8.464,
-      "vote_count": 5520
-    },
-    {
-      "adult": false,
-      "backdrop_path": "/zDE9hd1SG9695YncbZGjSf7Z9Jk.jpg",
-      "id": 1153576,
-      "title": "Street Fighter",
-      "original_title": "Street Fighter",
-      "overview": "In 1993, estranged Street Fighters Ryu and Ken Masters are thrown back into combat when the mysterious Chun-Li recruits them for the next World Warrior Tournament: a brutal clash of fists, fate, and fury. But behind this battle royale lies a deadly conspiracy that forces them to face off against each other and the demons of their past. And if they don't, it's GAME OVER!",
-      "poster_path": "/dJPT2Uf12X6aFg8i5N67NTpIZ9t.jpg",
-      "media_type": "movie",
-      "original_language": "en",
-      "genre_ids": [
-        28,
-        14
-      ],
-      "popularity": 117.2294,
-      "release_date": "2026-10-13",
-      "softcore": false,
-      "video": false,
-      "vote_average": 6.317,
-      "vote_count": 30
-    },
-    {
-      "adult": false,
-      "backdrop_path": "/dgUDj84BWtW6EZzee8BkgKnjDhh.jpg",
-      "id": 1561726,
-      "title": "Masterplan",
-      "original_title": "Masterplan",
-      "overview": "When a legendary thief sets his sights on the Mona Lisa, he recruits two young strangers to help him before revealing they are long-lost siblings… and oh yes, by the way, he is their father. Thrown into a chaotic reunion they never asked for, this new family must learn to work together — and try not to kill each other — if they want any chance at pulling off the heist of the century.",
-      "poster_path": "/5xmXVd7nCK3tAo34XkO58SxUCip.jpg",
-      "media_type": "movie",
-      "original_language": "en",
-      "genre_ids": [
-        28,
-        53
-      ],
-      "popularity": 10.9215,
-      "release_date": "2026-10-16",
-      "softcore": false,
-      "video": false,
-      "vote_average": 9,
-      "vote_count": 1
+      "vote_average": 7.098,
+      "vote_count": 184
     },
     {
       "adult": false,
@@ -245,29 +180,117 @@
       "release_date": "2026-09-09",
       "softcore": false,
       "video": false,
-      "vote_average": 6.6,
-      "vote_count": 175
+      "vote_average": 6.654,
+      "vote_count": 179
     },
     {
       "adult": false,
-      "backdrop_path": "/9MdxBPjI58xkzA7RtKX9xRKvlZp.jpg",
-      "id": 1288069,
-      "title": "Tenzing",
-      "original_title": "Tenzing",
-      "overview": "A determined man embarks on a high-stakes quest—and defies seemingly impossible odds—to fulfill his dream of being the first to reach the summit of Mount Everest.",
-      "poster_path": "/eI0QW02PYqhnmIvLRdn9vrfVVP7.jpg",
+      "backdrop_path": "/zDE9hd1SG9695YncbZGjSf7Z9Jk.jpg",
+      "id": 1153576,
+      "title": "Street Fighter",
+      "original_title": "Street Fighter",
+      "overview": "In 1993, estranged Street Fighters Ryu and Ken Masters are thrown back into combat when the mysterious Chun-Li recruits them for the next World Warrior Tournament: a brutal clash of fists, fate, and fury. But behind this battle royale lies a deadly conspiracy that forces them to face off against each other and the demons of their past. And if they don't, it's GAME OVER!",
+      "poster_path": "/dJPT2Uf12X6aFg8i5N67NTpIZ9t.jpg",
       "media_type": "movie",
       "original_language": "en",
       "genre_ids": [
-        18,
-        36
+        28,
+        14
       ],
-      "popularity": 7.478,
-      "release_date": "2026-10-09",
+      "popularity": 117.2294,
+      "release_date": "2026-10-13",
       "softcore": false,
       "video": false,
-      "vote_average": 6,
-      "vote_count": 5
+      "vote_average": 6.3,
+      "vote_count": 30
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/ncm7djsVTHQQMX2HEbEVxMUFchG.jpg",
+      "id": 1400837,
+      "title": "Other Mommy",
+      "original_title": "Other Mommy",
+      "overview": "Young Bela forms a relationship with a sinister entity in her home that looks uncannily like her own mother, drawing her into a terrifying and increasingly dark world.",
+      "poster_path": "/fGRNCssTRrhYZxNzykGGCoMsAVq.jpg",
+      "media_type": "movie",
+      "original_language": "en",
+      "genre_ids": [
+        27
+      ],
+      "popularity": 139.3386,
+      "release_date": "2026-10-07",
+      "softcore": false,
+      "video": false,
+      "vote_average": 5.891,
+      "vote_count": 119
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/kVtOcoUJ68chBD2tmERkdWz7lK5.jpg",
+      "id": 1400940,
+      "title": "Clayface",
+      "original_title": "Clayface",
+      "overview": "Matt Hagen's meteoric rise from Gotham street kid to Hollywood leading man is tragically cut short when a local crime boss's actions leave him horribly disfigured. Abandoned by his team and with nothing left, Matt seeks out a cutting edge treatment that miraculously returns him to his former self… but also unexpectedly affects his grip on reality, spiraling him down a destructive path of all-consuming revenge.",
+      "poster_path": "/5jCpQnWPikggmQZoDp1eAi6BI6w.jpg",
+      "media_type": "movie",
+      "original_language": "en",
+      "genre_ids": [
+        27,
+        53,
+        878
+      ],
+      "popularity": 41.6361,
+      "release_date": "2026-10-21",
+      "softcore": false,
+      "video": false,
+      "vote_average": 8.6,
+      "vote_count": 6
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/3icyRAqgakNcQn6aDVz9libFmBA.jpg",
+      "id": 1423191,
+      "title": "Resident Evil",
+      "original_title": "Resident Evil",
+      "overview": "Medical courier Bryan unwittingly finds himself fighting for survival as one fateful, horrifying night collapses around him in chaos.",
+      "poster_path": "/i7UyjfPio0VFHB9rBUZSFyhOoM8.jpg",
+      "media_type": "movie",
+      "original_language": "en",
+      "genre_ids": [
+        27,
+        878,
+        12
+      ],
+      "popularity": 296.6412,
+      "release_date": "2026-09-16",
+      "softcore": false,
+      "video": false,
+      "vote_average": 7.334,
+      "vote_count": 952
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/8phLVFEXOe02JgFmH9ldn3j4tXW.jpg",
+      "id": 312359,
+      "name": "Dragon Ball Super: Beerus",
+      "original_name": "ドラゴンボール超 ビルス",
+      "overview": "When Beerus, the God of Destruction, awakens in search of a worthy rival, Goku and his friends face an epic battle to stop him from destroying Earth.\n\nRemastered and re-edited version of Dragon Ball Super.",
+      "poster_path": "/AojgldgsOlzZV8ahyOzaiAjJWvV.jpg",
+      "media_type": "tv",
+      "original_language": "ja",
+      "genre_ids": [
+        16,
+        10759,
+        10765
+      ],
+      "popularity": 93.7106,
+      "first_air_date": "2026-10-11",
+      "softcore": false,
+      "vote_average": 9.8,
+      "vote_count": 181,
+      "origin_country": [
+        "JP"
+      ]
     },
     {
       "adult": false,
@@ -286,7 +309,7 @@
       "popularity": 144.7645,
       "first_air_date": "2026-10-08",
       "softcore": false,
-      "vote_average": 7.259,
+      "vote_average": 7.3,
       "vote_count": 135,
       "origin_country": [
         "CA",
@@ -295,45 +318,92 @@
     },
     {
       "adult": false,
-      "backdrop_path": "/shW2jHkQLZVv4Fko2rJDqTGU0gx.jpg",
-      "id": 1255833,
-      "title": "Whalefall",
-      "original_title": "Whalefall",
-      "overview": "Following the death of his father, Jay Gardiner goes diving off the central Coast of California in search of his remains, but is swallowed by a massive sperm whale. While trapped inside its belly with only one hour of oxygen left, Jay comes to realize that the hard-earned lessons his father imparted may be the key to his escape.",
-      "poster_path": "/vjTYUTgh9nO88i6HZ4YPRhiFL05.jpg",
+      "backdrop_path": "/g3gpP5YDbA85DsA0bt5mgGQIe5q.jpg",
+      "id": 1003596,
+      "title": "Avengers: Doomsday",
+      "original_title": "Avengers: Doomsday",
+      "overview": "Beloved heroes from three distinct universes are set on a deadly collision course and face an existential threat unlike anything they've ever encountered.",
+      "poster_path": "/sLYCyO58UvBuBtbHTQjPCCgJ4dG.jpg",
       "media_type": "movie",
       "original_language": "en",
       "genre_ids": [
-        53
+        878,
+        28,
+        12
       ],
-      "popularity": 67.2188,
-      "release_date": "2026-10-14",
+      "popularity": 123.6978,
+      "release_date": "2026-12-16",
       "softcore": false,
       "video": false,
-      "vote_average": 7.6,
-      "vote_count": 17
+      "vote_average": 0,
+      "vote_count": 0
     },
     {
       "adult": false,
-      "backdrop_path": "/kghxBvN7f3vUt377yjO4ygbefYN.jpg",
-      "id": 1514026,
-      "title": "Buddy",
-      "original_title": "Buddy",
-      "overview": "A magical, singing orange unicorn holds his cast hostage in a surreal TV-show dimension, as he becomes more and more demented.",
-      "poster_path": "/1BdZbNvl1SfrrX8J9X5tQzN6Ivu.jpg",
+      "backdrop_path": "/b7t3r39Oll5qPxBKzLZ8eHMBD7l.jpg",
+      "id": 1248832,
+      "title": "Digger",
+      "original_title": "Digger",
+      "overview": "The most powerful man in the world embarks on a frantic mission to prove he is humanity's savior before the disaster he's unleashed destroys everything.",
+      "poster_path": "/1ATXKrIPJyKNwnJ6lcG088Sa6zi.jpg",
       "media_type": "movie",
       "original_language": "en",
       "genre_ids": [
-        27,
         35,
-        14
+        18
       ],
-      "popularity": 110.6281,
-      "release_date": "2026-08-27",
+      "popularity": 96.6527,
+      "release_date": "2026-09-28",
       "softcore": false,
       "video": false,
-      "vote_average": 7.241,
-      "vote_count": 116
+      "vote_average": 7.501,
+      "vote_count": 373
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/voAufY8Jv3AVfG15sxY5H6XWFKr.jpg",
+      "id": 311648,
+      "name": "Make Me Tingle",
+      "original_name": "내가 떨릴 수 있게",
+      "overview": "A marketer with traditional views on love and marriage tries to navigate a connection with an adult toy company CEO with different values.",
+      "poster_path": "/e4MlbtE02So4D5DJy197DbiAxqs.jpg",
+      "media_type": "tv",
+      "original_language": "ko",
+      "genre_ids": [
+        18,
+        35
+      ],
+      "popularity": 11.0055,
+      "first_air_date": "2026-10-15",
+      "softcore": false,
+      "vote_average": 0,
+      "vote_count": 0,
+      "origin_country": [
+        "KR"
+      ]
+    },
+    {
+      "adult": false,
+      "backdrop_path": "/c1RP38PbwfCaQjSSotniS01uvuY.jpg",
+      "id": 213562,
+      "name": "Crystal Lake",
+      "original_name": "Crystal Lake",
+      "overview": "Single mother Pam Voorhees has been unable to shake her grief after her young, sickly son Jason tragically drowned in the town lake almost a year before. When two strangers arrive at Pam's door digging into her past, a disturbing chain of events is set into motion, leaving the townspeople of Crystal Lake wondering: just who is Pam Voorhees?",
+      "poster_path": "/sIj9WcA1LkcjGbYjrbfV3pGegbF.jpg",
+      "media_type": "tv",
+      "original_language": "en",
+      "genre_ids": [
+        9648,
+        18
+      ],
+      "popularity": 88.775,
+      "first_air_date": "2026-10-15",
+      "softcore": false,
+      "vote_average": 6.5,
+      "vote_count": 11,
+      "origin_country": [
+        "US"
+      ]
     },
     {
       "adult": false,
@@ -361,93 +431,23 @@
     },
     {
       "adult": false,
-      "backdrop_path": "/mqYqKvrKTgMvK50VtEDZlYFsnHz.jpg",
-      "id": 1381078,
-      "title": "Love of Your Life",
-      "original_title": "Love of Your Life",
-      "overview": "After a chance encounter sparks a sweeping romance, Maya's future is suddenly upended, sending her on an unexpected journey to love and live again.",
-      "poster_path": "/dL3Tcv4FU2K85bgnGRBgLjFSrLr.jpg",
+      "backdrop_path": "/shW2jHkQLZVv4Fko2rJDqTGU0gx.jpg",
+      "id": 1255833,
+      "title": "Whalefall",
+      "original_title": "Whalefall",
+      "overview": "Following the death of his father, Jay Gardiner goes diving off the central Coast of California in search of his remains, but is swallowed by a massive sperm whale. While trapped inside its belly with only one hour of oxygen left, Jay comes to realize that the hard-earned lessons his father imparted may be the key to his escape.",
+      "poster_path": "/vjTYUTgh9nO88i6HZ4YPRhiFL05.jpg",
       "media_type": "movie",
       "original_language": "en",
       "genre_ids": [
-        10749,
-        18
+        53
       ],
-      "popularity": 89.9551,
-      "release_date": "2026-10-07",
+      "popularity": 67.2188,
+      "release_date": "2026-10-14",
       "softcore": false,
       "video": false,
-      "vote_average": 6.528,
-      "vote_count": 36
-    },
-    {
-      "adult": false,
-      "backdrop_path": "/3icyRAqgakNcQn6aDVz9libFmBA.jpg",
-      "id": 1423191,
-      "title": "Resident Evil",
-      "original_title": "Resident Evil",
-      "overview": "Medical courier Bryan unwittingly finds himself fighting for survival as one fateful, horrifying night collapses around him in chaos.",
-      "poster_path": "/i7UyjfPio0VFHB9rBUZSFyhOoM8.jpg",
-      "media_type": "movie",
-      "original_language": "en",
-      "genre_ids": [
-        27,
-        878,
-        12
-      ],
-      "popularity": 296.6412,
-      "release_date": "2026-09-16",
-      "softcore": false,
-      "video": false,
-      "vote_average": 7.332,
-      "vote_count": 951
-    },
-    {
-      "adult": false,
-      "backdrop_path": "/h0OC7ouop8YLwbAVfS3UUE2Lw4T.jpg",
-      "id": 247718,
-      "name": "MobLand",
-      "original_name": "MobLand",
-      "overview": "Two mob families clash in a war that threatens to topple empires and lives.",
-      "poster_path": "/5Xc7WpWsgflfgEMoBlf9TmWhfbH.jpg",
-      "media_type": "tv",
-      "original_language": "en",
-      "genre_ids": [
-        80,
-        18
-      ],
-      "popularity": 279.0216,
-      "first_air_date": "2025-03-30",
-      "softcore": false,
-      "vote_average": 8.507,
-      "vote_count": 1032,
-      "origin_country": [
-        "GB",
-        "US"
-      ]
-    },
-    {
-      "adult": false,
-      "backdrop_path": "/hzznrBI07C2chXivlLYvEmQESP7.jpg",
-      "id": 203857,
-      "name": "The Diplomat",
-      "original_name": "The Diplomat",
-      "overview": "Amid an international crisis, a US diplomat contends with her high-profile job as ambassador to the UK and her strained marriage to a political star.",
-      "poster_path": "/cUy0ZYme43lop08nOtbQLWL0dX.jpg",
-      "media_type": "tv",
-      "original_language": "en",
-      "genre_ids": [
-        18,
-        10768
-      ],
-      "popularity": 99.9412,
-      "first_air_date": "2023-04-20",
-      "softcore": false,
-      "vote_average": 7.6,
-      "vote_count": 492,
-      "origin_country": [
-        "US"
-      ]
+      "vote_average": 7.583,
+      "vote_count": 18
     }
   ],
   "total_pages": 500,
