@@ -1,1 +1,77 @@
+name: Auto Cache Sync
 
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          path: src
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: src
+        run: npm install
+
+      - name: Load previous cache from cache-data
+        run: |
+          mkdir -p prev-cache
+          cd prev-cache
+          git init -q
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          if git fetch --depth=1 origin cache-data 2>/dev/null; then
+            git checkout -q FETCH_HEAD
+            mkdir -p ../src/cache
+            cp -r cache/* ../src/cache/ 2>/dev/null || true
+            echo "✅ Loaded previous cache"
+            du -sh ../src/cache || true
+          else
+            echo "ℹ️  No cache-data branch yet (first run)"
+          fi
+
+      - name: Manage size (delete old if over 50MB)
+        working-directory: src
+        run: node scripts/manage-size.js
+
+      - name: Sync fresh data from TMDB
+        working-directory: src
+        env:
+          TMDB_KEYS: ${{ secrets.TMDB_KEYS }}
+        run: node scripts/sync-all.js
+
+      - name: Prepare clean deploy repo
+        run: |
+          mkdir -p deploy
+          cd deploy
+          git init -q
+          git config user.name "cache-bot"
+          git config user.email "cache-bot@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          mkdir -p cache
+          cp -r ../src/cache/* cache/
+          echo "📊 Final cache size:"
+          du -sh cache/
+
+      - name: Force-push to cache-data
+        working-directory: deploy
+        run: |
+          git add -A
+          git commit -m "cache: $(date -u +%Y-%m-%d-%H)" --quiet
+          git branch -M cache-data
+          git push -f origin cache-data
+          echo "✅ Pushed to cache-data branch"
