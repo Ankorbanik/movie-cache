@@ -1,14 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════
-   manage-size.js
-   Check movies cache size. If > 50 MB, delete oldest 5 MB.
-   Runs BEFORE sync-all.js
+   manage-size.js — v3.1
+   90 MB limit, delete 10 MB chunks
+   Checks both movies/ and tv/ folders
 ═══════════════════════════════════════════════════════════════ */
 const fs = require('fs');
 const path = require('path');
 
-const MAX_SIZE_MB = 50;
-const DELETE_CHUNK_MB = 5;
+const MAX_SIZE_MB = 90;
+const DELETE_CHUNK_MB = 10;
+
 const MOVIES_DIR = path.join(__dirname, '..', 'cache', 'tmdb', 'movies');
+const TV_DIR = path.join(__dirname, '..', 'cache', 'tmdb', 'tv');
 
 const MAX_SIZE = MAX_SIZE_MB * 1024 * 1024;
 const DELETE_CHUNK = DELETE_CHUNK_MB * 1024 * 1024;
@@ -38,27 +40,27 @@ function getFilesSortedByAge(dir) {
     .sort(function(a, b){ return a.mtime - b.mtime; });
 }
 
-(function(){
-  console.log('📊 Cache size check...');
-
-  if (!fs.existsSync(MOVIES_DIR)) {
-    fs.mkdirSync(MOVIES_DIR, { recursive: true });
-    console.log('✅ Movies cache dir created (empty)');
-    return;
+function cleanupDir(dir, dirName) {
+  console.log('\n📂 Checking ' + dirName + ' cache...');
+  
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log('   ✅ Created (empty)');
+    return 0;
   }
 
-  const currentSize = getDirSize(MOVIES_DIR);
+  const currentSize = getDirSize(dir);
   const currentMB = (currentSize / 1024 / 1024).toFixed(2);
-  console.log('📦 Current movies cache: ' + currentMB + ' MB');
+  console.log('   📦 Size: ' + currentMB + ' MB');
 
   if (currentSize < MAX_SIZE) {
-    console.log('✅ Under ' + MAX_SIZE_MB + ' MB limit. No deletion needed.');
-    return;
+    console.log('   ✅ Under ' + MAX_SIZE_MB + ' MB limit');
+    return 0;
   }
 
-  console.log('⚠️  Over ' + MAX_SIZE_MB + ' MB! Deleting oldest ' + DELETE_CHUNK_MB + ' MB...');
+  console.log('   ⚠️  OVER ' + MAX_SIZE_MB + ' MB! Deleting oldest ' + DELETE_CHUNK_MB + ' MB...');
 
-  const files = getFilesSortedByAge(MOVIES_DIR);
+  const files = getFilesSortedByAge(dir);
   let deletedSize = 0;
   let deletedCount = 0;
 
@@ -71,9 +73,24 @@ function getFilesSortedByAge(dir) {
     } catch(e){}
   }
 
-  const newSize = getDirSize(MOVIES_DIR);
+  const newSize = getDirSize(dir);
   const newMB = (newSize / 1024 / 1024).toFixed(2);
-  console.log('🗑️  Deleted ' + deletedCount + ' files (' + (deletedSize/1024/1024).toFixed(2) + ' MB)');
-  console.log('📦 New size: ' + newMB + ' MB');
-  console.log('✅ Cleanup complete!');
+  console.log('   🗑️  Deleted ' + deletedCount + ' files (' + (deletedSize/1024/1024).toFixed(2) + ' MB)');
+  console.log('   📦 New size: ' + newMB + ' MB');
+  return deletedCount;
+}
+
+(function(){
+  console.log('╔═══════════════════════════════════════════════════════════════╗');
+  console.log('║   📊 CACHE SIZE MANAGEMENT — v3.1                            ║');
+  console.log('║   Limit: ' + MAX_SIZE_MB + ' MB | Delete chunks: ' + DELETE_CHUNK_MB + ' MB                        ║');
+  console.log('╚═══════════════════════════════════════════════════════════════╝');
+
+  const moviesDeleted = cleanupDir(MOVIES_DIR, 'Movies');
+  const tvDeleted = cleanupDir(TV_DIR, 'TV Shows');
+
+  console.log('\n📊 Total cleanup:');
+  console.log('   Movies: ' + moviesDeleted + ' files deleted');
+  console.log('   TV:     ' + tvDeleted + ' files deleted');
+  console.log('✅ Size management complete!');
 })();
