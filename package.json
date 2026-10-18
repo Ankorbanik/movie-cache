@@ -1,10 +1,12 @@
 {
   "name": "movie-cache",
-  "version": "3.0.0",
+  "version": "7.0.0",
   "private": true,
-  "description": "Auto-sync movie cache with 50MB size limit",
+  "description": "Ultimate Multi-Source Movie Cache (TMDB, AniList, TVmaze) with 90MB limit",
   "type": "commonjs",
-  "dependencies": {
-    "node-fetch": "^3.3.2"
+  "scripts": {
+    "sync": "node scripts/sync-all.js",
+    "manage": "node scripts/manage-size.js",
+    "start": "node scripts/manage-size.js && node scripts/sync-all.js"
   }
 }
