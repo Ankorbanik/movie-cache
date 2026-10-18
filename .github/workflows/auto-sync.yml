@@ -1,34 +1,40 @@
-name: Auto Cache Sync
+name: Auto Cache Sync (Ultimate Engine)
 
 on:
   schedule:
-    - cron: '0 */2 * * *'
-  workflow_dispatch:
+    - cron: '0 */2 * * *' # প্রতি ২ ঘণ্টায় রান হবে
+  workflow_dispatch: # ম্যানুয়ালি রান করার অপশন
 
 permissions:
   contents: write
 
+# যদি আগের কোনো সিঙ্ক চলতে থাকে, তবে সেটি বাতিল করে নতুনটি শুরু হবে
+concurrency:
+  group: cache-sync-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30 # TMDB + AniList + TVmaze এর জন্য ৩০ মিনিট টাইমআউট
+    
     steps:
-      - name: Checkout main
+      - name: 📥 Checkout Main Repository
         uses: actions/checkout@v4
         with:
           path: src
           fetch-depth: 1
 
-      - name: Setup Node.js
+      - name: 🟢 Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install dependencies
+      - name: 📦 Install Dependencies
         working-directory: src
         run: npm install
 
-      - name: Load previous cache from cache-data
+      - name: 🔄 Load Previous Cache (from cache-data)
         run: |
           mkdir -p prev-cache
           cd prev-cache
@@ -38,17 +44,17 @@ jobs:
             git checkout -q FETCH_HEAD
             mkdir -p ../src/cache
             cp -r cache/* ../src/cache/ 2>/dev/null || true
-            echo "✅ Loaded previous cache"
+            echo "✅ Previous cache loaded successfully!"
             du -sh ../src/cache || true
           else
-            echo "ℹ️  First run — no previous cache"
+            echo "ℹ️ First run — no previous cache found."
           fi
 
-      - name: Manage size (90 MB limit)
+      - name: 🧹 Manage Cache Size (90 MB Limit)
         working-directory: src
         run: node scripts/manage-size.js
 
-      - name: Sync fresh data (all content types)
+      - name: 🚀 Sync Fresh Data (TMDB + AniList + TVmaze)
         working-directory: src
         env:
           TMDB_KEYS: ${{ secrets.TMDB_KEYS }}
@@ -56,7 +62,7 @@ jobs:
           WORKER_SECRET: ${{ secrets.WORKER_SECRET }}
         run: node scripts/sync-all.js
 
-      - name: Prepare clean deploy repo
+      - name: 📦 Prepare Clean Deploy Repository
         run: |
           mkdir -p deploy
           cd deploy
@@ -65,15 +71,20 @@ jobs:
           git config user.email "cache-bot@users.noreply.github.com"
           git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           mkdir -p cache
-          cp -r ../src/cache/* cache/
-          echo "📊 Final cache size:"
+          cp -r ../src/cache/* cache/ 2>/dev/null || true
+          echo "📊 Final cache size to deploy:"
           du -sh cache/
 
-      - name: Force-push to cache-data
+      - name: 🚀 Force-Push to cache-data branch
         working-directory: deploy
         run: |
           git add -A
-          git commit -m "cache: $(date -u +%Y-%m-%d-%H)" --quiet
-          git branch -M cache-data
-          git push -f origin cache-data
-          echo "✅ Pushed to cache-data branch"
+          # চেক করা হচ্ছে কোনো পরিবর্তন আছে কিনা
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "ℹ️ No changes detected in cache. Skipping commit."
+          else
+            git commit -m "chore: auto-sync cache [$(date -u +%Y-%m-%d-%H)]" --quiet
+            git branch -M cache-data
+            git push -f origin cache-data
+            echo "✅ Successfully pushed to cache-data branch!"
+          fi
