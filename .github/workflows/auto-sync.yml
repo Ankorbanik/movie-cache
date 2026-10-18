@@ -88,3 +88,11 @@ jobs:
             git push -f origin cache-data
             echo "✅ Successfully pushed to cache-data branch!"
           fi
+
+      # 👇 নতুন যোগ করা স্টেপ: Cloudflare Worker-কে নোটিফাই করা 👇
+      - name: 🔔 Notify Cloudflare Worker
+        run: |
+          curl -X POST "${{ secrets.CLOUDFLARE_WORKER_URL }}" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.WORKER_SECRET }}" \
+          -d '{"event": "sync_complete"}'
