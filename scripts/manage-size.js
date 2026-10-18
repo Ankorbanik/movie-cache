@@ -1,96 +1,157 @@
 /* ═══════════════════════════════════════════════════════════════
-   manage-size.js — v3.1
-   90 MB limit, delete 10 MB chunks
-   Checks both movies/ and tv/ folders
+   manage-size.js — v5.0 (ULTIMATE DYNAMIC EDITION)
+   Dynamically scans ALL databases.
+   Auto-detects new folders (TMDB, AniList, OMDb, etc.)
+   Global 90 MB limit with smart oldest-file deletion.
 ═══════════════════════════════════════════════════════════════ */
 const fs = require('fs');
 const path = require('path');
 
 const MAX_SIZE_MB = 90;
 const DELETE_CHUNK_MB = 10;
-
-const MOVIES_DIR = path.join(__dirname, '..', 'cache', 'tmdb', 'movies');
-const TV_DIR = path.join(__dirname, '..', 'cache', 'tmdb', 'tv');
+const CACHE_ROOT = path.join(__dirname, '..', 'cache');
 
 const MAX_SIZE = MAX_SIZE_MB * 1024 * 1024;
 const DELETE_CHUNK = DELETE_CHUNK_MB * 1024 * 1024;
 
-function getDirSize(dir) {
-  if (!fs.existsSync(dir)) return 0;
-  let total = 0;
-  fs.readdirSync(dir).forEach(function(f){
-    const full = path.join(dir, f);
-    try {
-      const stat = fs.statSync(full);
-      if (stat.isFile()) total += stat.size;
-    } catch(e){}
-  });
-  return total;
+/* ─────────────────────────────────────────────────────────────
+   📋 Supported Databases (Future-Proof Reference)
+───────────────────────────────────────────────────────────── */
+const SUPPORTED_DATABASES = [
+  'tmdb', 'anilist', 'omdb', 'tvmaze', 'watchmode', 
+  'fanart', 'animedoc', 'simkl', 'thetvdb', 'jikan'
+];
+
+/* ─────────────────────────────────────────────────────────────
+   📂 Helper: Recursively get all JSON files & size
+───────────────────────────────────────────────────────────── */
+function getAllFilesInfo(dir, fileList = []) {
+  if (!fs.existsSync(dir)) return fileList;
+
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const fullPath = path.join(dir, file);
+    const stat = fs.statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      getAllFilesInfo(fullPath, fileList); // Recursive scan
+    } else if (file.endsWith('.json') && file !== '_meta.json') {
+      // Extract the root DB folder name from the path (e.g., 'tmdb', 'anilist')
+      const relativePath = path.relative(CACHE_ROOT, fullPath);
+      const dbName = relativePath.split(path.sep)[0] || 'root';
+
+      fileList.push({
+        name: file,
+        path: fullPath,
+        db: dbName,
+        size: stat.size,
+        mtime: stat.mtimeMs
+      });
+    }
+  }
+  return fileList;
 }
 
-function getFilesSortedByAge(dir) {
-  if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir)
-    .filter(function(f){ return f.endsWith('.json'); })
-    .map(function(f){
-      const full = path.join(dir, f);
-      const stat = fs.statSync(full);
-      return { name: f, path: full, size: stat.size, mtime: stat.mtimeMs };
-    })
-    .sort(function(a, b){ return a.mtime - b.mtime; });
+function getTotalSize(files) {
+  return files.reduce((acc, file) => acc + file.size, 0);
 }
 
-function cleanupDir(dir, dirName) {
-  console.log('\n📂 Checking ' + dirName + ' cache...');
+/* ─────────────────────────────────────────────────────────────
+   📊 Helper: Show size of each database folder dynamically
+───────────────────────────────────────────────────────────── */
+function showDatabaseBreakdown(allFiles) {
+  console.log('\n📁 Database Breakdown:');
   
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-    console.log('   ✅ Created (empty)');
-    return 0;
+  const dbStats = {};
+  
+  allFiles.forEach(file => {
+    if (!dbStats[file.db]) dbStats[file.db] = { size: 0, count: 0 };
+    dbStats[file.db].size += file.size;
+    dbStats[file.db].count++;
+  });
+
+  const sortedDbs = Object.keys(dbStats).sort((a, b) => dbStats[b].size - dbStats[a].size);
+
+  if (sortedDbs.length === 0) {
+    console.log('   (No files found)');
+    return;
   }
 
-  const currentSize = getDirSize(dir);
-  const currentMB = (currentSize / 1024 / 1024).toFixed(2);
-  console.log('   📦 Size: ' + currentMB + ' MB');
+  sortedDbs.forEach(dbName => {
+    const stat = dbStats[dbName];
+    const sizeMB = (stat.size / 1024 / 1024).toFixed(2);
+    const isSupported = SUPPORTED_DATABASES.includes(dbName.toLowerCase());
+    const icon = isSupported ? '🔹' : '⚠️ ';
+    const namePadded = dbName.toUpperCase().padEnd(12);
+    
+    console.log(`   ${icon} ${namePadded} : ${sizeMB} MB (${stat.count} files)`);
+  });
+}
 
+/* ─────────────────────────────────────────────────────────────
+   🚀 Main Execution
+───────────────────────────────────────────────────────────── */
+(function(){
+  console.log('╔═══════════════════════════════════════════════════════════════╗');
+  console.log('║   📊 CACHE SIZE MANAGEMENT — v5.0 (Dynamic)                   ║');
+  console.log('║   Limit: ' + MAX_SIZE_MB + ' MB | Delete chunks: ' + DELETE_CHUNK_MB + ' MB                        ║');
+  console.log('╚═══════════════════════════════════════════════════════════════╝');
+
+  if (!fs.existsSync(CACHE_ROOT)) {
+    console.log('\n⚠️  Cache folder does not exist yet. Creating...');
+    fs.mkdirSync(CACHE_ROOT, { recursive: true });
+    return;
+  }
+
+  // ১. সব ফাইল স্ক্যান করো
+  let allFiles = getAllFilesInfo(CACHE_ROOT);
+  let currentSize = getTotalSize(allFiles);
+  let currentMB = (currentSize / 1024 / 1024).toFixed(2);
+
+  // ২. বর্তমান অবস্থা দেখাও
+  showDatabaseBreakdown(allFiles);
+  console.log(`\n📦 Total Cache Size: ${currentMB} MB`);
+
+  // ৩. লিমিট চেক
   if (currentSize < MAX_SIZE) {
-    console.log('   ✅ Under ' + MAX_SIZE_MB + ' MB limit');
-    return 0;
+    console.log(`✅ Under ${MAX_SIZE_MB} MB limit. No action needed.`);
+    return;
   }
 
-  console.log('   ⚠️  OVER ' + MAX_SIZE_MB + ' MB! Deleting oldest ' + DELETE_CHUNK_MB + ' MB...');
+  console.log(`\n⚠️  OVER ${MAX_SIZE_MB} MB LIMIT! Deleting oldest ${DELETE_CHUNK_MB} MB...`);
 
-  const files = getFilesSortedByAge(dir);
+  // ৪. সব ডাটাবেসের ফাইল একসাথে তারিখ অনুযায়ী সাজাও (পুরনো থেকে নতুন)
+  allFiles.sort((a, b) => a.mtime - b.mtime);
+
   let deletedSize = 0;
   let deletedCount = 0;
+  let deletedFromDBs = {};
 
-  for (const file of files) {
+  // ৫. ডিলিট করা (Dynamic tracking)
+  for (const file of allFiles) {
     if (deletedSize >= DELETE_CHUNK) break;
     try {
       fs.unlinkSync(file.path);
       deletedSize += file.size;
       deletedCount++;
-    } catch(e){}
+      
+      const dbName = file.db.toUpperCase();
+      deletedFromDBs[dbName] = (deletedFromDBs[dbName] || 0) + 1;
+
+    } catch(e) {
+      console.log(`   ❌ Failed to delete: ${file.name} (${e.message})`);
+    }
   }
 
-  const newSize = getDirSize(dir);
+  // ৬. ফাইনাল রিপোর্ট
+  const newSize = getTotalSize(getAllFilesInfo(CACHE_ROOT));
   const newMB = (newSize / 1024 / 1024).toFixed(2);
-  console.log('   🗑️  Deleted ' + deletedCount + ' files (' + (deletedSize/1024/1024).toFixed(2) + ' MB)');
-  console.log('   📦 New size: ' + newMB + ' MB');
-  return deletedCount;
-}
-
-(function(){
-  console.log('╔═══════════════════════════════════════════════════════════════╗');
-  console.log('║   📊 CACHE SIZE MANAGEMENT — v3.1                            ║');
-  console.log('║   Limit: ' + MAX_SIZE_MB + ' MB | Delete chunks: ' + DELETE_CHUNK_MB + ' MB                        ║');
-  console.log('╚═══════════════════════════════════════════════════════════════╝');
-
-  const moviesDeleted = cleanupDir(MOVIES_DIR, 'Movies');
-  const tvDeleted = cleanupDir(TV_DIR, 'TV Shows');
-
-  console.log('\n📊 Total cleanup:');
-  console.log('   Movies: ' + moviesDeleted + ' files deleted');
-  console.log('   TV:     ' + tvDeleted + ' files deleted');
-  console.log('✅ Size management complete!');
+  
+  console.log(`\n🗑️  Deleted ${deletedCount} files (${(deletedSize/1024/1024).toFixed(2)} MB)`);
+  Object.keys(deletedFromDBs).forEach(db => {
+    console.log(`      └─ ${db}: ${deletedFromDBs[db]} files`);
+  });
+  console.log(`📦 New total size: ${newMB} MB`);
+  console.log(`✅ Size management complete!`);
+  
 })();
