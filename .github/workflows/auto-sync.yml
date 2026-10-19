@@ -1,4 +1,4 @@
-name: Auto Cache Sync (Ultimate Engine v9.0)
+name: Auto Cache Sync (Ultimate Engine v10.5)
 
 on:
   schedule:
@@ -16,7 +16,7 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 60 # Timeout বাড়িয়ে ৬০ মিনিট করা হলো (v9.0 এর হেভি ডাটার জন্য)
+    timeout-minutes: 60 # Timeout ৬০ মিনিট (ভারী ডাটা প্রসেস করার জন্য)
     
     env:
       NODE_OPTIONS: "--max-old-space-size=4096" # বড় JSON ফাইল প্রসেস করার জন্য ৪ জিবি মেমরি
