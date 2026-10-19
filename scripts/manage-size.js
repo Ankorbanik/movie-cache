@@ -1,17 +1,21 @@
 /* ═══════════════════════════════════════════════════════════════
-   manage-size.js — v8.0 (ULTIMATE SMART DELETION)
+   manage-size.js — v9.0 (ULTIMATE SMART DELETION ENGINE)
    Features:
-   - Auto-detects all databases (TMDB, AniList, etc.)
-   - Global 90 MB limit with 10 MB smart deletion.
-   - Protects 'categories' folders (they are tiny & essential).
+   - Auto-detects all databases (TMDB, AniList, TVmaze, etc.)
+   - Global 95 MB limit with 15 MB smart deletion.
+   - Smart Priority: Deletes heavy Media (movies/tv) first, keeps 
+     Categories & Config safe.
+   - Auto-cleans empty folders.
    - Auto-updates _meta.json after cleanup.
-   - Ignore hidden and 0-byte files.
 ═══════════════════════════════════════════════════════════════ */
 const fs = require('fs');
 const path = require('path');
 
-const MAX_SIZE_MB = 90;
-const DELETE_CHUNK_MB = 10;
+/* ═══════════════════════════════════════════════════════════════
+   ⚙️ CONFIGURATION
+═══════════════════════════════════════════════════════════════ */
+const MAX_SIZE_MB = 95;       // Max allowed cache size (increased from 90 for v9.0 data)
+const DELETE_CHUNK_MB = 15;   // Amount to delete when limit is exceeded
 const CACHE_ROOT = path.join(__dirname, '..', 'cache');
 
 const MAX_SIZE = MAX_SIZE_MB * 1024 * 1024;
@@ -40,13 +44,21 @@ function getAllFilesInfo(dir, fileList = []) {
       const relativePath = path.relative(CACHE_ROOT, fullPath);
       const pathParts = relativePath.split(path.sep);
       const dbName = pathParts[0] || 'root';
-      const isCategory = relativePath.includes('categories');
-
+      
+      // Smart Categorization
+      const isCategory = relativePath.includes('categories') || relativePath.includes('config');
+      
+      // Heavy media files (movies/tv/details) can be deleted first
+      const isMedia = relativePath.includes('movies') || 
+                      relativePath.includes('tv') || 
+                      relativePath.includes('details');
+      
       fileList.push({
         name: file,
         path: fullPath,
         db: dbName,
         isCategory: isCategory,
+        isMedia: isMedia,
         size: stat.size,
         mtime: stat.mtimeMs
       });
@@ -68,10 +80,11 @@ function showDatabaseBreakdown(allFiles) {
   const dbStats = {};
   
   allFiles.forEach(file => {
-    if (!dbStats[file.db]) dbStats[file.db] = { size: 0, count: 0, categories: 0 };
+    if (!dbStats[file.db]) dbStats[file.db] = { size: 0, count: 0, categories: 0, media: 0 };
     dbStats[file.db].size += file.size;
     dbStats[file.db].count++;
     if (file.isCategory) dbStats[file.db].categories++;
+    if (file.isMedia) dbStats[file.db].media++;
   });
 
   const sortedDbs = Object.keys(dbStats).sort((a, b) => dbStats[b].size - dbStats[a].size);
@@ -86,14 +99,36 @@ function showDatabaseBreakdown(allFiles) {
     const sizeMB = (stat.size / 1024 / 1024).toFixed(2);
     const namePadded = dbName.toUpperCase().padEnd(12);
     
-    console.log(`   🔹 ${namePadded} : ${sizeMB} MB (${stat.count} files | ${stat.categories} categories)`);
+    console.log(`   🔹 ${namePadded} : ${sizeMB} MB (${stat.count} files | ${stat.media} media | ${stat.categories} cats)`);
   });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   🧹 Helper: Cleanup empty folders
+───────────────────────────────────────────────────────────── */
+function cleanupEmptyFolders(dir) {
+  if (!fs.existsSync(dir)) return;
+  const files = fs.readdirSync(dir);
+  
+  for (const file of files) {
+    const fullPath = path.join(dir, file);
+    if (fs.statSync(fullPath).isDirectory()) {
+      cleanupEmptyFolders(fullPath);
+      // If folder is empty now, remove it
+      if (fs.readdirSync(fullPath).length === 0) {
+        try { 
+          fs.rmdirSync(fullPath); 
+          console.log(`   🧹 Removed empty folder: ${path.relative(CACHE_ROOT, fullPath)}`);
+        } catch(e) {}
+      }
+    }
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────
    📝 Helper: Update _meta.json after deletion
 ───────────────────────────────────────────────────────────── */
-function updateMetaFile() {
+function updateMetaFile(deletedCount, deletedSize) {
   const metaPath = path.join(CACHE_ROOT, '_meta.json');
   if (!fs.existsSync(metaPath)) return;
 
@@ -105,9 +140,12 @@ function updateMetaFile() {
     meta.cache_size_mb = (finalSize / 1024 / 1024).toFixed(2);
     meta.total_files = finalFiles.length;
     meta.last_cleanup = new Date().toISOString();
+    meta.last_cleanup_removed_files = deletedCount;
+    meta.last_cleanup_removed_mb = (deletedSize / 1024 / 1024).toFixed(2);
+    meta.cache_status = finalSize < MAX_SIZE ? 'Healthy' : 'Warning';
 
     fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
-    console.log(`   📝 Updated _meta.json with new size: ${meta.cache_size_mb} MB`);
+    console.log(`   📝 Updated _meta.json -> New Size: ${meta.cache_size_mb} MB | Status: ${meta.cache_status}`);
   } catch(e) {
     console.log(`   ⚠️ Failed to update _meta.json: ${e.message}`);
   }
@@ -118,7 +156,7 @@ function updateMetaFile() {
 ───────────────────────────────────────────────────────────── */
 (function(){
   console.log('╔═══════════════════════════════════════════════════════════════╗');
-  console.log('║   📊 CACHE SIZE MANAGEMENT — v8.0 (Smart Ultimate)            ║');
+  console.log('║   📊 CACHE SIZE MANAGEMENT — v9.0 (Smart Ultimate)            ║');
   console.log('║   Limit: ' + MAX_SIZE_MB + ' MB | Delete chunks: ' + DELETE_CHUNK_MB + ' MB                        ║');
   console.log('╚═══════════════════════════════════════════════════════════════╝');
 
@@ -145,20 +183,30 @@ function updateMetaFile() {
 
   console.log(`\n⚠️  OVER ${MAX_SIZE_MB} MB LIMIT! Deleting oldest ${DELETE_CHUNK_MB} MB...`);
 
-  // ৪. স্মার্ট সর্টিং: ক্যাটাগরি ফাইল ব্যাকআপে রাখো, আগে বড় ফাইল (Movies/TV) ডিলিট করো
-  // প্রথমে ক্যাটাগরি বাদে বাকি ফাইলগুলোকে পুরনো থেকে নতুন সাজাও
-  let filesToDelete = allFiles.filter(f => !f.isCategory).sort((a, b) => a.mtime - b.mtime);
-  
-  // যদি ক্যাটাগরি বাদে যথেষ্ট ফাইল না থাকে, তবে ক্যাটাগরিগুলোকেও লিস্টে যোগ করো
-  if (filesToDelete.length === 0) {
-    filesToDelete = allFiles.sort((a, b) => a.mtime - b.mtime);
-  }
+  /* 
+   * ৪. স্মার্ট ডিলিট প্রায়োরিটি সর্টিং:
+   * Priority 1: Media files (movies/tv) -> oldest first
+   * Priority 2: Lists (trending, popular) -> oldest first
+   * Priority 3: Categories/Config -> oldest first (only if absolutely necessary)
+   */
+  let filesToDelete = allFiles.sort((a, b) => {
+    // First, prioritize media (isMedia = true) over others (isMedia = false)
+    if (a.isMedia && !b.isMedia) return -1;
+    if (!a.isMedia && b.isMedia) return 1;
+    
+    // Second, keep categories safe (isCategory = true) go to the very end
+    if (a.isCategory && !b.isCategory) return 1;
+    if (!a.isCategory && b.isCategory) return -1;
+    
+    // Finally, sort by oldest time
+    return a.mtime - b.mtime;
+  });
 
   let deletedSize = 0;
   let deletedCount = 0;
   let deletedFromDBs = {};
 
-  // ৫. ডিলিট করা
+  // ৫. ফাইল ডিলিট করা
   for (const file of filesToDelete) {
     if (deletedSize >= DELETE_CHUNK) break;
     try {
@@ -167,25 +215,30 @@ function updateMetaFile() {
       deletedCount++;
       
       const dbName = file.db.toUpperCase();
-      deletedFromDBs[dbName] = (deletedFromDBs[dbName] || 0) + 1;
+      const typeName = file.isMedia ? 'Media' : (file.isCategory ? 'Category' : 'List');
+      const key = `${dbName} (${typeName})`;
+      deletedFromDBs[key] = (deletedFromDBs[key] || 0) + 1;
 
     } catch(e) {
       console.log(`   ❌ Failed to delete: ${file.name} (${e.message})`);
     }
   }
 
-  // ৬. ফাইনাল রিপোর্ট
+  // ৬. খালি ফোল্ডার পরিষ্কার করা
+  cleanupEmptyFolders(CACHE_ROOT);
+
+  // ৭. ফাইনাল রিপোর্ট
   const newSize = getTotalSize(getAllFilesInfo(CACHE_ROOT));
   const newMB = (newSize / 1024 / 1024).toFixed(2);
   
   console.log(`\n🗑️  Deleted ${deletedCount} files (${(deletedSize/1024/1024).toFixed(2)} MB)`);
-  Object.keys(deletedFromDBs).forEach(db => {
-    console.log(`      └─ ${db}: ${deletedFromDBs[db]} files`);
+  Object.keys(deletedFromDBs).forEach(key => {
+    console.log(`      └─ ${key}: ${deletedFromDBs[key]} files`);
   });
   console.log(`📦 New total size: ${newMB} MB`);
   
-  // ৭. মেটা ফাইল আপডেট
-  updateMetaFile();
+  // ৮. মেটা ফাইল আপডেট
+  updateMetaFile(deletedCount, deletedSize);
 
   console.log(`✅ Size management complete!`);
   
