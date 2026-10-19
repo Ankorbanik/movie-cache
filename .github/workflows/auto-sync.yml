@@ -1,4 +1,4 @@
-name: Auto Cache Sync (Ultimate Engine)
+name: Auto Cache Sync (Ultimate Engine v9.0)
 
 on:
   schedule:
@@ -16,8 +16,11 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 30 # TMDB + AniList + TVmaze এর জন্য ৩০ মিনিট টাইমআউট
+    timeout-minutes: 60 # Timeout বাড়িয়ে ৬০ মিনিট করা হলো (v9.0 এর হেভি ডাটার জন্য)
     
+    env:
+      NODE_OPTIONS: "--max-old-space-size=4096" # বড় JSON ফাইল প্রসেস করার জন্য ৪ জিবি মেমরি
+
     steps:
       - name: 📥 Checkout Main Repository
         uses: actions/checkout@v4
@@ -30,11 +33,19 @@ jobs:
         with:
           node-version: '20'
 
+      - name: 📦 Cache Node Modules
+        uses: actions/cache@v3
+        with:
+          path: src/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('src/package-lock.json', 'src/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: 📦 Install Dependencies
         working-directory: src
         run: npm install
 
-      - name: 🔄 Load Previous Cache (from cache-data)
+      - name: 🔄 Load Previous Cache (from cache-data branch)
         run: |
           mkdir -p prev-cache
           cd prev-cache
@@ -50,14 +61,19 @@ jobs:
             echo "ℹ️ First run — no previous cache found."
           fi
 
-      - name: 🧹 Manage Cache Size (90 MB Limit)
+      - name: 🧹 Manage Cache Size (95 MB Limit)
         working-directory: src
         run: node scripts/manage-size.js
 
-      - name: 🚀 Sync Fresh Data (TMDB + AniList + TVmaze)
+      - name: 🚀 Sync Fresh Data (10 Databases)
         working-directory: src
         env:
           TMDB_KEYS: ${{ secrets.TMDB_KEYS }}
+          OMDB_KEYS: ${{ secrets.OMDB_KEYS }}
+          WATCHMODE_KEYS: ${{ secrets.WATCHMODE_KEYS }}
+          FANART_KEYS: ${{ secrets.FANART_KEYS }}
+          SIMKL_CLIENT_ID: ${{ secrets.SIMKL_CLIENT_ID }}
+          TVDB_API_KEY: ${{ secrets.TVDB_API_KEY }}
           CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
           WORKER_SECRET: ${{ secrets.WORKER_SECRET }}
         run: node scripts/sync-all.js
@@ -89,10 +105,22 @@ jobs:
             echo "✅ Successfully pushed to cache-data branch!"
           fi
 
-      # 👇 নতুন যোগ করা স্টেপ: Cloudflare Worker-কে নোটিফাই করা 👇
+      - name: 📦 Backup Cache as Artifact (Safety)
+        uses: actions/upload-artifact@v4
+        with:
+          name: cache-backup-${{ github.run_number }}
+          path: deploy/cache/
+          retention-days: 3
+
       - name: 🔔 Notify Cloudflare Worker
+        if: success() # সিঙ্ক সফল হলেই কেবল নোটিফাই করবে
         run: |
-          curl -X POST "${{ secrets.CLOUDFLARE_WORKER_URL }}" \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer ${{ secrets.WORKER_SECRET }}" \
-          -d '{"event": "sync_complete"}'
+          if [ -n "${{ secrets.CLOUDFLARE_WORKER_URL }}" ]; then
+            curl -X POST "${{ secrets.CLOUDFLARE_WORKER_URL }}" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.WORKER_SECRET }}" \
+            -d '{"event": "sync_complete", "status": "success", "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}'
+            echo "✅ Cloudflare Worker notified successfully."
+          else
+            echo "⚠️ No Cloudflare Worker URL found, skipping notification."
+          fi
