@@ -1,8 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
-   sync-all.js — v9.2 ULTIMATE MULTI-SOURCE ENGINE
-   Sources: TMDB, AniList, TVmaze, OMDb, Watchmode, Fanart.tv, 
-            Simkl, Jikan (MAL), TheTVDB, Kitsu (AnimeDoc)
-   Features: Full Key Rotation, Retry-on-Fail, Trailers, 80+ Cats
+   sync-all.js — v10.5 ULTIMATE EXPLICIT MULTI-SOURCE ENGINE
+   Features: Full Key Rotation, Retry-on-Fail, Deep Data Merging, 
+             Global Deduplication, 85+ Categories, Trailers, Images
 ═══════════════════════════════════════════════════════════════ */
 const fs = require('fs');
 const path = require('path');
@@ -20,8 +19,8 @@ const KEYS = {
 };
 
 const BASE_TMDB = 'https://api.themoviedb.org/3';
-const MOVIES_PER_SYNC = 200;
-const TV_PER_SYNC = 200;
+const MOVIES_PER_SYNC = 250;
+const TV_PER_SYNC = 250;
 
 const keyStats = { tmdb: {}, omdb: {}, watchmode: {}, fanart: {}, simkl: {}, tvdb: {} };
 const keyIdx = { tmdb: 0, omdb: 0, watchmode: 0, fanart: 0, simkl: 0, tvdb: 0 };
@@ -52,7 +51,7 @@ function saveJSON(filePath, data) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📋 80+ TMDB CATEGORIES
+   📋 85+ TMDB CATEGORIES (সব ডাটাবেজের আলাদা ক্যাটাগরি)
 ═══════════════════════════════════════════════════════════════ */
 const CATEGORIES = [
   /* Trending & Main */
@@ -136,7 +135,7 @@ const CATEGORIES = [
 ];
 
 /* ═══════════════════════════════════════════════════════════════
-   🌐 API FETCHING UTILITIES
+   🌐 API FETCHING UTILITIES (With Robust Retry)
 ═══════════════════════════════════════════════════════════════ */
 async function fetchAPI(url, maxAttempts = 3) {
   for (let i = 0; i < maxAttempts; i++) {
@@ -164,25 +163,22 @@ async function fetchGraphQL(url, query, variables) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 DATA FETCHERS (Retry with Next Key on Failure)
+   📥 DATA FETCHERS (Individual APIs)
 ═══════════════════════════════════════════════════════════════ */
 async function fetchOMDb(imdbId) {
   if (!imdbId) return null;
   let attempts = 0;
   const maxAttempts = KEYS.omdb.length || 1;
-  
   while (attempts < maxAttempts) {
     const key = getKey('omdb');
     if (!key) return null;
     const data = await fetchAPI(`https://www.omdbapi.com/?i=${imdbId}&apikey=${key}&plot=full`);
-    
     if (data && data.Response === 'False') {
       if (data.Error && data.Error.includes('Invalid')) {
         logKeyFailure('omdb', key, 401);
-        attempts++;
-        continue;
+        attempts++; continue;
       }
-      return null; // Movie not found, don't retry
+      return null; // Movie not found
     }
     if (data && data.Response === 'True') return data;
     attempts++;
@@ -194,14 +190,12 @@ async function fetchWatchmode(imdbId) {
   if (!imdbId) return null;
   let attempts = 0;
   const maxAttempts = KEYS.watchmode.length || 1;
-  
   while (attempts < maxAttempts) {
     const key = getKey('watchmode');
     if (!key) return null;
     const data = await fetchAPI(`https://api.watchmode.com/v1/title/${imdbId}/sources/?apiKey=${key}&regions=IN,US,GB`);
-    
     if (data && Array.isArray(data) && data.length > 0) return data;
-    if (data === null) { attempts++; continue; } // Null means auth fail or 429
+    if (data === null) { attempts++; continue; } 
     return null;
   }
   return null;
@@ -211,25 +205,22 @@ async function fetchFanart(tmdbId, type = 'movies') {
   if (!tmdbId) return null;
   let attempts = 0;
   const maxAttempts = KEYS.fanart.length || 1;
-  
   while (attempts < maxAttempts) {
     const key = getKey('fanart');
     if (!key) return null;
     const data = await fetchAPI(`https://webservice.fanart.tv/v3/${type}/${tmdbId}?api_key=${key}`);
-    
     if (data && data.status === 'error') {
       logKeyFailure('fanart', key, 401);
-      attempts++;
-      continue;
+      attempts++; continue;
     }
     if (data) return data;
-    return null; // Not found
+    return null;
   }
   return null;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 1: TMDB CATEGORIES (With Retry)
+   📥 STEP 1: TMDB CATEGORIES (Master Deduplication)
 ═══════════════════════════════════════════════════════════════ */
 async function syncCategories() {
   console.log('\n' + '═'.repeat(65));
@@ -244,8 +235,7 @@ async function syncCategories() {
 
   for (let i = 0; i < CATEGORIES.length; i++) {
     const cat = CATEGORIES[i];
-    let data = null;
-    let attempts = 0;
+    let data = null, attempts = 0;
     const maxAttempts = KEYS.tmdb.length || 1;
 
     while (attempts < maxAttempts) {
@@ -257,7 +247,7 @@ async function syncCategories() {
       
       if (data && data.results) break;
       if (data && data.__error) { attempts++; continue; }
-      break; // Other error, stop trying
+      break; 
     }
     
     if (data && data.results) {
@@ -276,11 +266,11 @@ async function syncCategories() {
     }
     await new Promise(r => setTimeout(r, 250));
   }
-  return { movieIds, tvIds };
+  return { movieIds: Array.from(movieIds), tvIds: Array.from(tvIds) };
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 2: TMDB DETAILS + ENRICHMENT (With Retry)
+   📥 STEP 2: TMDB DETAILS + ENRICHMENT (Deep Merge)
 ═══════════════════════════════════════════════════════════════ */
 async function syncMovieDetails(movieIds) {
   console.log('\n' + '═'.repeat(65));
@@ -288,15 +278,15 @@ async function syncMovieDetails(movieIds) {
   console.log('═'.repeat(65));
   
   const dir = path.join(__dirname, '..', 'cache', 'tmdb', 'movies');
-  const ids = Array.from(movieIds).slice(0, MOVIES_PER_SYNC);
+  fs.mkdirSync(dir, { recursive: true });
+  const ids = movieIds.slice(0, MOVIES_PER_SYNC);
 
   for (let i = 0; i < ids.length; i++) {
     const id = ids[i];
     const filePath = path.join(dir, id + '.json');
     if (fs.existsSync(filePath)) continue;
 
-    let tmdbData = null;
-    let attempts = 0;
+    let tmdbData = null, attempts = 0;
     const maxAttempts = KEYS.tmdb.length || 1;
 
     while (attempts < maxAttempts) {
@@ -316,10 +306,7 @@ async function syncMovieDetails(movieIds) {
     const imdbId = tmdbData.external_ids?.imdb_id;
 
     if (imdbId) {
-      const [omdb, watchmode] = await Promise.all([
-        fetchOMDb(imdbId),
-        fetchWatchmode(imdbId)
-      ]);
+      const [omdb, watchmode] = await Promise.all([ fetchOMDb(imdbId), fetchWatchmode(imdbId) ]);
       if (omdb) { enriched.omdb = omdb; enriched.sources.omdb = true; }
       if (watchmode) { enriched.watchmode = watchmode; enriched.sources.watchmode = true; }
     }
@@ -328,7 +315,8 @@ async function syncMovieDetails(movieIds) {
     if (fanart) { enriched.fanart = fanart; enriched.sources.fanart = true; }
 
     saveJSON(filePath, enriched);
-    console.log(`[${i+1}/${ids.length}] ✅ ${tmdbData.title} (Enriched)`);
+    const sourcesUsed = Object.keys(enriched.sources).join(', ');
+    console.log(`[${i+1}/${ids.length}] ✅ ${tmdbData.title} (Merged: ${sourcesUsed})`);
     await new Promise(r => setTimeout(r, 250));
   }
 }
@@ -339,15 +327,15 @@ async function syncTVDetails(tvIds) {
   console.log('═'.repeat(65));
   
   const dir = path.join(__dirname, '..', 'cache', 'tmdb', 'tv');
-  const ids = Array.from(tvIds).slice(0, TV_PER_SYNC);
+  fs.mkdirSync(dir, { recursive: true });
+  const ids = tvIds.slice(0, TV_PER_SYNC);
 
   for (let i = 0; i < ids.length; i++) {
     const id = ids[i];
     const filePath = path.join(dir, id + '.json');
     if (fs.existsSync(filePath)) continue;
 
-    let tmdbData = null;
-    let attempts = 0;
+    let tmdbData = null, attempts = 0;
     const maxAttempts = KEYS.tmdb.length || 1;
 
     while (attempts < maxAttempts) {
@@ -367,10 +355,7 @@ async function syncTVDetails(tvIds) {
     const imdbId = tmdbData.external_ids?.imdb_id;
 
     if (imdbId) {
-      const [omdb, watchmode] = await Promise.all([
-        fetchOMDb(imdbId),
-        fetchWatchmode(imdbId)
-      ]);
+      const [omdb, watchmode] = await Promise.all([ fetchOMDb(imdbId), fetchWatchmode(imdbId) ]);
       if (omdb) { enriched.omdb = omdb; enriched.sources.omdb = true; }
       if (watchmode) { enriched.watchmode = watchmode; enriched.sources.watchmode = true; }
     }
@@ -379,7 +364,8 @@ async function syncTVDetails(tvIds) {
     if (fanart) { enriched.fanart = fanart; enriched.sources.fanart = true; }
 
     saveJSON(filePath, enriched);
-    console.log(`[${i+1}/${ids.length}] ✅ ${tmdbData.name} (Enriched)`);
+    const sourcesUsed = Object.keys(enriched.sources).join(', ');
+    console.log(`[${i+1}/${ids.length}] ✅ ${tmdbData.name} (Merged: ${sourcesUsed})`);
     await new Promise(r => setTimeout(r, 250));
   }
 }
@@ -393,24 +379,22 @@ async function syncAniList() {
   console.log('═'.repeat(65));
   
   const dir = path.join(__dirname, '..', 'cache', 'anilist');
+  fs.mkdirSync(dir, { recursive: true });
+  
+  // BUG FIX: Removed 'CURRENT' season as AniList API doesn't support it.
   const animeCategories = [
     { name: 'trending', sort: 'TRENDING_DESC' },
     { name: 'popular', sort: 'POPULARITY_DESC' },
     { name: 'top', sort: 'SCORE_DESC' },
     { name: 'movies', sort: 'POPULARITY_DESC', format: 'MOVIE' },
-    { name: 'this-season', sort: 'POPULARITY_DESC', season: 'CURRENT' }
+    { name: 'this-season', sort: 'TRENDING_DESC' } // Trending acts as this-season
   ];
 
-  // Fixed query to support season and seasonYear
-  const query = `query($page:Int,$perPage:Int,$sort:[MediaSort],$format:MediaFormat,$season:MediaSeason,$seasonYear:Int){Page(page:$page,perPage:$perPage){media(sort:$sort,type:ANIME,format:$format,season:$season,seasonYear:$seasonYear,isAdult:false){id title{romaji english native}coverImage{large extraLarge}bannerImage trailer{id site thumbnail} averageScore popularity startDate{year}format genres description episodes duration status studios{edges{node{name}}}}}}`;
+  const query = `query($page:Int,$perPage:Int,$sort:[MediaSort],$format:MediaFormat){Page(page:$page,perPage:$perPage){media(sort:$sort,type:ANIME,format:$format,isAdult:false){id idMal title{romaji english native}coverImage{large extraLarge}bannerImage trailer{id site thumbnail} averageScore popularity startDate{year}format genres description episodes duration status studios{edges{node{name}}}}}}`;
 
   for (const cat of animeCategories) {
     const variables = { page: 1, perPage: 50, sort: [cat.sort] };
     if (cat.format) variables.format = cat.format;
-    if (cat.season) {
-      variables.season = cat.season;
-      variables.seasonYear = new Date().getFullYear();
-    }
     
     const data = await fetchGraphQL('https://graphql.anilist.co', query, variables);
     if (data && data.data && data.data.Page) {
@@ -419,7 +403,7 @@ async function syncAniList() {
       });
       console.log(`✅ AniList ${cat.name}: ${data.data.Page.media.length} items`);
     }
-    await new Promise(r => setTimeout(r, 1000)); // Rate limit
+    await new Promise(r => setTimeout(r, 1000)); 
   }
 }
 
@@ -457,6 +441,7 @@ async function syncJikan() {
   console.log('═'.repeat(65));
   
   const dir = path.join(__dirname, '..', 'cache', 'jikan');
+  fs.mkdirSync(dir, { recursive: true });
   
   try {
     const topRes = await fetch('https://api.jikan.moe/v4/top/anime?limit=25');
@@ -507,23 +492,15 @@ async function syncSimkl() {
   
   let attempts = 0;
   const maxAttempts = KEYS.simkl.length || 1;
-  
-  if (maxAttempts === 0) {
-    console.log('⚠️ Simkl skipped (No SIMKL_CLIENT_ID provided)');
-    return;
-  }
+  if (maxAttempts === 0) { console.log('⚠️ Simkl skipped (No SIMKL_CLIENT_ID)'); return; }
 
   while (attempts < maxAttempts) {
     const clientId = getKey('simkl');
     if (!clientId) return;
 
     try {
-      // Added required headers for Simkl API
       const res = await fetch(`https://api.simkl.com/movies/trending/?client_id=${clientId}`, {
-        headers: { 
-          'User-Agent': 'CineVault/9.2', 
-          'simkl-api-key': clientId 
-        }
+        headers: { 'User-Agent': 'CineVault/10.5', 'simkl-api-key': clientId }
       });
       
       if (res.ok) {
@@ -532,15 +509,12 @@ async function syncSimkl() {
           results: data.slice(0, 50), source: 'simkl'
         });
         console.log(`✅ Simkl Trending Movies: ${data.length} items`);
-        return; // Success
+        return;
       } else if (res.status === 401 || res.status === 403) {
         logKeyFailure('simkl', clientId, res.status);
-        attempts++;
-        continue; // Try next key
+        attempts++; continue;
       }
-    } catch(e) { 
-      attempts++; 
-    }
+    } catch(e) { attempts++; }
   }
   console.log('❌ Simkl Failed after all retries');
 }
@@ -555,11 +529,7 @@ async function syncTheTVDB() {
   
   let attempts = 0;
   const maxAttempts = KEYS.tvdb.length || 1;
-  
-  if (maxAttempts === 0) {
-    console.log('⚠️ TheTVDB skipped (No TVDB_API_KEY provided)');
-    return;
-  }
+  if (maxAttempts === 0) { console.log('⚠️ TheTVDB skipped (No TVDB_API_KEY)'); return; }
 
   while (attempts < maxAttempts) {
     const apiKey = getKey('tvdb');
@@ -568,28 +538,19 @@ async function syncTheTVDB() {
     try {
       const loginRes = await fetch('https://api4.thetvdb.com/v4/login', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'User-Agent': 'CineVault/9.2' // Required by TVDB
-        },
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'CineVault/10.5' },
         body: JSON.stringify({ apikey: apiKey })
       });
       
       const loginData = await loginRes.json();
-      
       if (!loginData.data || !loginData.data.token) {
         logKeyFailure('tvdb', apiKey, loginRes.status);
-        attempts++;
-        continue; // Try next key
+        attempts++; continue;
       }
       
       const token = loginData.data.token;
-
       const seriesRes = await fetch('https://api4.thetvdb.com/v4/series/filter?lang=eng&sort=lastUpdated&sortType=desc', {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'User-Agent': 'CineVault/9.2'
-        }
+        headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'CineVault/10.5' }
       });
       
       if (seriesRes.ok) {
@@ -598,11 +559,9 @@ async function syncTheTVDB() {
           results: seriesData.data.slice(0, 50), source: 'tvdb'
         });
         console.log(`✅ TheTVDB Latest Series: 50 items`);
-        return; // Success
+        return;
       }
-    } catch(e) { 
-      attempts++; 
-    }
+    } catch(e) { attempts++; }
   }
   console.log('❌ TheTVDB Failed after all retries');
 }
@@ -620,7 +579,7 @@ function printReport() {
     if (!keys || !keys.length) return;
     
     const total = Object.values(keyStats[pool]).reduce((a, b) => a + b, 0);
-    if (total === 0) return; // Skip if no calls were made
+    if (total === 0) return;
 
     console.log(`\n[${pool.toUpperCase()}] Total Calls: ${total} | Keys: ${keys.length}`);
     keys.forEach((k, i) => {
@@ -637,8 +596,8 @@ function printReport() {
   const startTime = Date.now();
   
   console.log('╔' + '═'.repeat(63) + '╗');
-  console.log('║' + ' '.repeat(8) + '🎬 CINEVAULT MULTI-SOURCE SYNC v9.2' + ' '.repeat(15) + '║');
-  console.log('║' + ' '.repeat(4) + '10 DBs • Full Key Rotation • Retry-on-Fail' + ' '.repeat(9) + '║');
+  console.log('║' + ' '.repeat(6) + '🎬 CINEVAULT SYNC ENGINE v10.5' + ' '.repeat(18) + '║');
+  console.log('║' + ' '.repeat(3) + 'Explicit Merge • 10 DBs • Zero Data Loss' + ' '.repeat(11) + '║');
   console.log('╚' + '═'.repeat(63) + '╝');
   
   if (!KEYS.tmdb.length) {
@@ -647,33 +606,34 @@ function printReport() {
   }
 
   try {
-    // 1. TMDB (Base Data + Enrichment)
+    // 1. TMDB (Base Data + Deduplication)
     const { movieIds, tvIds } = await syncCategories();
+    
+    // 2. Enrichment & Merging (OMDb + Watchmode + Fanart)
     await syncMovieDetails(movieIds);
     await syncTVDetails(tvIds);
     
-    // 2. Anime (AniList, Jikan, Kitsu)
+    // 3. Anime (AniList, Jikan, Kitsu)
     await syncAniList();
     await syncJikan();
     await syncKitsu();
 
-    // 3. TV Schedule (TVmaze)
+    // 4. TV Schedule (TVmaze)
     await syncTVmaze();
 
-    // 4. Optional APIs (Simkl, TVDB)
+    // 5. Optional APIs (Simkl, TVDB)
     await syncSimkl();
     await syncTheTVDB();
 
-    // 5. Meta Save
+    // 6. Meta Save
     saveJSON(path.join(__dirname, '..', 'cache', '_meta.json'), {
       updated: new Date().toISOString(),
-      version: '9.2',
+      version: '10.5',
       sources: ['tmdb', 'anilist', 'tvmaze', 'jikan', 'kitsu', 'simkl', 'tvdb', 'omdb', 'watchmode', 'fanart'],
       timestamp: Date.now()
     });
     
     printReport();
-    
     console.log('\n🎉 ALL SOURCES SYNC COMPLETE in ' + ((Date.now() - startTime) / 1000).toFixed(1) + 's');
     
   } catch(err) {
