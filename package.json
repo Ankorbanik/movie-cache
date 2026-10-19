@@ -1,9 +1,12 @@
 {
   "name": "movie-cache",
-  "version": "7.0.0",
+  "version": "9.0.0",
   "private": true,
-  "description": "Ultimate Multi-Source Movie Cache (TMDB, AniList, TVmaze) with 90MB limit",
+  "description": "Ultimate Multi-Source Movie Cache (10 Databases) with 95MB limit and Smart Deletion",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "sync": "node scripts/sync-all.js",
     "manage": "node scripts/manage-size.js",
