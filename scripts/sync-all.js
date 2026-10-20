@@ -1,13 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════
    sync-all.js — v10.5 ULTIMATE EXPLICIT MULTI-SOURCE ENGINE
-   Features: Full Key Rotation, Retry-on-Fail, Deep Data Merging, 
-             Global Deduplication, 85+ Categories, Trailers, Images
+   FIXED: Simkl 401 Error, Jikan Block, Key Stats Penalty
 ═══════════════════════════════════════════════════════════════ */
 const fs = require('fs');
 const path = require('path');
 
 /* ═══════════════════════════════════════════════════════════════
-   🔑 KEY MANAGEMENT (Full Rotation for ALL APIs)
+   🔑 KEY MANAGEMENT
 ═══════════════════════════════════════════════════════════════ */
 const KEYS = {
   tmdb: (process.env.TMDB_KEYS || '').split(',').map(k => k.trim()).filter(Boolean),
@@ -41,7 +40,7 @@ function getKey(pool) {
 }
 
 function logKeyFailure(pool, key, status) {
-  if (keyStats[pool] && keyStats[pool][key]) keyStats[pool][key] += 100; // Penalty
+  // FIX 1: Removed the +100 penalty that was showing fake 101 calls
   console.log(`   ⚠️ [${pool.toUpperCase()} FAIL] ${maskKey(key)} → HTTP ${status}`);
 }
 
@@ -51,96 +50,17 @@ function saveJSON(filePath, data) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📋 85+ TMDB CATEGORIES (সব ডাটাবেজের আলাদা ক্যাটাগরি)
+   🌐 API FETCHING UTILITIES (Fixed with User-Agent for Cloudflare)
 ═══════════════════════════════════════════════════════════════ */
-const CATEGORIES = [
-  /* Trending & Main */
-  { name: 'trending-all', url: '/trending/all/week', type: 'mixed', icon: '🔥' },
-  { name: 'trending-movies', url: '/trending/movie/week', type: 'movie', icon: '🎬' },
-  { name: 'trending-tv', url: '/trending/tv/week', type: 'tv', icon: '📺' },
-  { name: 'popular-movies', url: '/movie/popular', type: 'movie', icon: '⭐' },
-  { name: 'top-rated-movies', url: '/movie/top_rated', type: 'movie', icon: '🏆' },
-  { name: 'upcoming-movies', url: '/movie/upcoming', type: 'movie', icon: '📅' },
-  { name: 'now-playing', url: '/movie/now_playing', type: 'movie', icon: '🎥' },
-  { name: 'popular-tv', url: '/tv/popular', type: 'tv', icon: '⭐' },
-  { name: 'top-rated-tv', url: '/tv/top_rated', type: 'tv', icon: '🏆' },
-  { name: 'airing-today', url: '/tv/airing_today', type: 'tv', icon: '📡' },
-  /* Streaming Platforms / Web Series */
-  { name: 'netflix', url: '/discover/tv?with_networks=213', type: 'tv', icon: '🎯' },
-  { name: 'prime-video', url: '/discover/tv?with_networks=1024', type: 'tv', icon: '📦' },
-  { name: 'disney-plus', url: '/discover/tv?with_networks=2739', type: 'tv', icon: '🏰' },
-  { name: 'apple-tv', url: '/discover/tv?with_networks=2552', type: 'tv', icon: '🍎' },
-  { name: 'hbo', url: '/discover/tv?with_networks=49', type: 'tv', icon: '📺' },
-  { name: 'hulu', url: '/discover/tv?with_networks=453', type: 'tv', icon: '🟢' },
-  { name: 'paramount-plus', url: '/discover/tv?with_networks=4330', type: 'tv', icon: '⛰️' },
-  { name: 'peacock', url: '/discover/tv?with_networks=3353', type: 'tv', icon: '🦚' },
-  /* Anime / Animation */
-  { name: 'anime-trending', url: '/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc', type: 'tv', icon: '🎌' },
-  { name: 'anime-movies', url: '/discover/movie?with_genres=16&with_original_language=ja&sort_by=popularity.desc', type: 'movie', icon: '🎨' },
-  { name: 'animation-general', url: '/discover/movie?with_genres=16&sort_by=popularity.desc', type: 'movie', icon: '🎭' },
-  /* Languages (Movies) */
-  { name: 'hindi-movies', url: '/discover/movie?with_original_language=hi&sort_by=popularity.desc', type: 'movie', icon: '🇮🇳' },
-  { name: 'bengali-movies', url: '/discover/movie?with_original_language=bn&sort_by=popularity.desc', type: 'movie', icon: '🇧🇩' },
-  { name: 'tamil-movies', url: '/discover/movie?with_original_language=ta&sort_by=popularity.desc', type: 'movie', icon: '🎬' },
-  { name: 'telugu-movies', url: '/discover/movie?with_original_language=te&sort_by=popularity.desc', type: 'movie', icon: '🎬' },
-  { name: 'korean-movies', url: '/discover/movie?with_original_language=ko&sort_by=popularity.desc', type: 'movie', icon: '🇰🇷' },
-  { name: 'japanese-movies', url: '/discover/movie?with_original_language=ja&sort_by=popularity.desc&without_genres=16', type: 'movie', icon: '🇯🇵' },
-  { name: 'chinese-movies', url: '/discover/movie?with_original_language=zh&sort_by=popularity.desc', type: 'movie', icon: '🇨🇳' },
-  { name: 'spanish-movies', url: '/discover/movie?with_original_language=es&sort_by=popularity.desc', type: 'movie', icon: '🇪🇸' },
-  { name: 'french-movies', url: '/discover/movie?with_original_language=fr&sort_by=popularity.desc', type: 'movie', icon: '🇫🇷' },
-  { name: 'german-movies', url: '/discover/movie?with_original_language=de&sort_by=popularity.desc', type: 'movie', icon: '🇩🇪' },
-  { name: 'italian-movies', url: '/discover/movie?with_original_language=it&sort_by=popularity.desc', type: 'movie', icon: '🇮🇹' },
-  { name: 'russian-movies', url: '/discover/movie?with_original_language=ru&sort_by=popularity.desc', type: 'movie', icon: '🇷🇺' },
-  { name: 'turkish-movies', url: '/discover/movie?with_original_language=tr&sort_by=popularity.desc', type: 'movie', icon: '🇹🇷' },
-  { name: 'thai-movies', url: '/discover/movie?with_original_language=th&sort_by=popularity.desc', type: 'movie', icon: '🇹🇭' },
-  { name: 'arabic-movies', url: '/discover/movie?with_original_language=ar&sort_by=popularity.desc', type: 'movie', icon: '🇸🇦' },
-  /* Languages (TV Shows) */
-  { name: 'korean-drama', url: '/discover/tv?with_original_language=ko&sort_by=popularity.desc', type: 'tv', icon: '🇰🇷' },
-  { name: 'chinese-drama', url: '/discover/tv?with_original_language=zh&sort_by=popularity.desc', type: 'tv', icon: '🇨🇳' },
-  { name: 'japanese-drama', url: '/discover/tv?with_original_language=ja&sort_by=popularity.desc&without_genres=16', type: 'tv', icon: '🇯🇵' },
-  { name: 'turkish-drama', url: '/discover/tv?with_original_language=tr&sort_by=popularity.desc', type: 'tv', icon: '🇹🇷' },
-  { name: 'thai-drama', url: '/discover/tv?with_original_language=th&sort_by=popularity.desc', type: 'tv', icon: '🇹🇭' },
-  { name: 'hindi-tv', url: '/discover/tv?with_original_language=hi&sort_by=popularity.desc', type: 'tv', icon: '🇮🇳' },
-  { name: 'spanish-tv', url: '/discover/tv?with_original_language=es&sort_by=popularity.desc', type: 'tv', icon: '🇪🇸' },
-  /* Genres (Movies) */
-  { name: 'action', url: '/discover/movie?with_genres=28&sort_by=popularity.desc', type: 'movie', icon: '💥' },
-  { name: 'comedy', url: '/discover/movie?with_genres=35&sort_by=popularity.desc', type: 'movie', icon: '😂' },
-  { name: 'horror', url: '/discover/movie?with_genres=27&sort_by=popularity.desc', type: 'movie', icon: '👻' },
-  { name: 'scifi', url: '/discover/movie?with_genres=878&sort_by=popularity.desc', type: 'movie', icon: '🚀' },
-  { name: 'romance', url: '/discover/movie?with_genres=10749&sort_by=popularity.desc', type: 'movie', icon: '💕' },
-  { name: 'thriller', url: '/discover/movie?with_genres=53&sort_by=popularity.desc', type: 'movie', icon: '🔪' },
-  { name: 'documentary', url: '/discover/movie?with_genres=99&sort_by=popularity.desc', type: 'movie', icon: '📖' },
-  { name: 'fantasy', url: '/discover/movie?with_genres=14&sort_by=popularity.desc', type: 'movie', icon: '🧙' },
-  { name: 'crime', url: '/discover/movie?with_genres=80&sort_by=popularity.desc', type: 'movie', icon: '🚔' },
-  { name: 'mystery', url: '/discover/movie?with_genres=9648&sort_by=popularity.desc', type: 'movie', icon: '🕵️' },
-  { name: 'family', url: '/discover/movie?with_genres=10751&sort_by=popularity.desc', type: 'movie', icon: '👨‍👩‍👧' },
-  { name: 'war', url: '/discover/movie?with_genres=10752&sort_by=popularity.desc', type: 'movie', icon: '⚔️' },
-  { name: 'history', url: '/discover/movie?with_genres=36&sort_by=popularity.desc', type: 'movie', icon: '📜' },
-  /* Genres (TV) */
-  { name: 'action-tv', url: '/discover/tv?with_genres=10759&sort_by=popularity.desc', type: 'tv', icon: '💥' },
-  { name: 'comedy-tv', url: '/discover/tv?with_genres=35&sort_by=popularity.desc', type: 'tv', icon: '😂' },
-  { name: 'drama-tv', url: '/discover/tv?with_genres=18&sort_by=popularity.desc', type: 'tv', icon: '🎭' },
-  { name: 'scifi-tv', url: '/discover/tv?with_genres=10765&sort_by=popularity.desc', type: 'tv', icon: '🚀' },
-  { name: 'reality-tv', url: '/discover/tv?with_genres=10764&sort_by=popularity.desc', type: 'tv', icon: '🎤' },
-  { name: 'talk-show', url: '/discover/tv?with_genres=10767&sort_by=popularity.desc', type: 'tv', icon: '🗣️' },
-  /* Studios / Franchises */
-  { name: 'marvel', url: '/discover/movie?with_companies=420&sort_by=popularity.desc', type: 'movie', icon: '🦸' },
-  { name: 'dc', url: '/discover/movie?with_companies=9993&sort_by=popularity.desc', type: 'movie', icon: '🦇' },
-  { name: 'pixar', url: '/discover/movie?with_companies=3&sort_by=popularity.desc', type: 'movie', icon: '🎈' },
-  { name: 'ghibli', url: '/discover/movie?with_companies=10342&sort_by=popularity.desc', type: 'movie', icon: '🌿' },
-  { name: 'a24', url: '/discover/movie?with_companies=41077&sort_by=popularity.desc', type: 'movie', icon: '🎞️' },
-  { name: 'warner-bros', url: '/discover/movie?with_companies=174&sort_by=popularity.desc', type: 'movie', icon: '🎬' },
-  { name: 'universal', url: '/discover/movie?with_companies=33&sort_by=popularity.desc', type: 'movie', icon: '🌍' },
-  { name: 'sony', url: '/discover/movie?with_companies=5&sort_by=popularity.desc', type: 'movie', icon: '🎮' }
-];
+const GLOBAL_HEADERS = {
+  'User-Agent': 'CineVault/10.5 (https://github.com/Ankorbanik/movie-cache)',
+  'Accept': 'application/json'
+};
 
-/* ═══════════════════════════════════════════════════════════════
-   🌐 API FETCHING UTILITIES (With Robust Retry)
-═══════════════════════════════════════════════════════════════ */
 async function fetchAPI(url, maxAttempts = 3) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { headers: GLOBAL_HEADERS });
       if (res.status === 429) { await new Promise(r => setTimeout(r, 1500 * (i + 1))); continue; }
       if (res.status >= 500) { await new Promise(r => setTimeout(r, 1000)); continue; }
       if (res.status === 401 || res.status === 403) return { __error: res.status };
@@ -155,7 +75,7 @@ async function fetchGraphQL(url, query, variables) {
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { ...GLOBAL_HEADERS, 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, variables })
     });
     return await res.json();
@@ -175,10 +95,9 @@ async function fetchOMDb(imdbId) {
     const data = await fetchAPI(`https://www.omdbapi.com/?i=${imdbId}&apikey=${key}&plot=full`);
     if (data && data.Response === 'False') {
       if (data.Error && data.Error.includes('Invalid')) {
-        logKeyFailure('omdb', key, 401);
-        attempts++; continue;
+        logKeyFailure('omdb', key, 401); attempts++; continue;
       }
-      return null; // Movie not found
+      return null;
     }
     if (data && data.Response === 'True') return data;
     attempts++;
@@ -210,8 +129,7 @@ async function fetchFanart(tmdbId, type = 'movies') {
     if (!key) return null;
     const data = await fetchAPI(`https://webservice.fanart.tv/v3/${type}/${tmdbId}?api_key=${key}`);
     if (data && data.status === 'error') {
-      logKeyFailure('fanart', key, 401);
-      attempts++; continue;
+      logKeyFailure('fanart', key, 401); attempts++; continue;
     }
     if (data) return data;
     return null;
@@ -220,8 +138,81 @@ async function fetchFanart(tmdbId, type = 'movies') {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 1: TMDB CATEGORIES (Master Deduplication)
+   📥 STEP 1: TMDB CATEGORIES
 ═══════════════════════════════════════════════════════════════ */
+const CATEGORIES = [
+  { name: 'trending-all', url: '/trending/all/week', type: 'mixed', icon: '🔥' },
+  { name: 'trending-movies', url: '/trending/movie/week', type: 'movie', icon: '🎬' },
+  { name: 'trending-tv', url: '/trending/tv/week', type: 'tv', icon: '📺' },
+  { name: 'popular-movies', url: '/movie/popular', type: 'movie', icon: '⭐' },
+  { name: 'top-rated-movies', url: '/movie/top_rated', type: 'movie', icon: '🏆' },
+  { name: 'upcoming-movies', url: '/movie/upcoming', type: 'movie', icon: '📅' },
+  { name: 'now-playing', url: '/movie/now_playing', type: 'movie', icon: '🎥' },
+  { name: 'popular-tv', url: '/tv/popular', type: 'tv', icon: '⭐' },
+  { name: 'top-rated-tv', url: '/tv/top_rated', type: 'tv', icon: '🏆' },
+  { name: 'airing-today', url: '/tv/airing_today', type: 'tv', icon: '📡' },
+  { name: 'netflix', url: '/discover/tv?with_networks=213', type: 'tv', icon: '🎯' },
+  { name: 'prime-video', url: '/discover/tv?with_networks=1024', type: 'tv', icon: '📦' },
+  { name: 'disney-plus', url: '/discover/tv?with_networks=2739', type: 'tv', icon: '🏰' },
+  { name: 'apple-tv', url: '/discover/tv?with_networks=2552', type: 'tv', icon: '🍎' },
+  { name: 'hbo', url: '/discover/tv?with_networks=49', type: 'tv', icon: '📺' },
+  { name: 'hulu', url: '/discover/tv?with_networks=453', type: 'tv', icon: '🟢' },
+  { name: 'paramount-plus', url: '/discover/tv?with_networks=4330', type: 'tv', icon: '⛰️' },
+  { name: 'peacock', url: '/discover/tv?with_networks=3353', type: 'tv', icon: '🦚' },
+  { name: 'anime-trending', url: '/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc', type: 'tv', icon: '🎌' },
+  { name: 'anime-movies', url: '/discover/movie?with_genres=16&with_original_language=ja&sort_by=popularity.desc', type: 'movie', icon: '🎨' },
+  { name: 'animation-general', url: '/discover/movie?with_genres=16&sort_by=popularity.desc', type: 'movie', icon: '🎭' },
+  { name: 'hindi-movies', url: '/discover/movie?with_original_language=hi&sort_by=popularity.desc', type: 'movie', icon: '🇮🇳' },
+  { name: 'bengali-movies', url: '/discover/movie?with_original_language=bn&sort_by=popularity.desc', type: 'movie', icon: '🇧🇩' },
+  { name: 'tamil-movies', url: '/discover/movie?with_original_language=ta&sort_by=popularity.desc', type: 'movie', icon: '🎬' },
+  { name: 'telugu-movies', url: '/discover/movie?with_original_language=te&sort_by=popularity.desc', type: 'movie', icon: '🎬' },
+  { name: 'korean-movies', url: '/discover/movie?with_original_language=ko&sort_by=popularity.desc', type: 'movie', icon: '🇰🇷' },
+  { name: 'japanese-movies', url: '/discover/movie?with_original_language=ja&sort_by=popularity.desc&without_genres=16', type: 'movie', icon: '🇯🇵' },
+  { name: 'chinese-movies', url: '/discover/movie?with_original_language=zh&sort_by=popularity.desc', type: 'movie', icon: '🇨🇳' },
+  { name: 'spanish-movies', url: '/discover/movie?with_original_language=es&sort_by=popularity.desc', type: 'movie', icon: '🇪🇸' },
+  { name: 'french-movies', url: '/discover/movie?with_original_language=fr&sort_by=popularity.desc', type: 'movie', icon: '🇫🇷' },
+  { name: 'german-movies', url: '/discover/movie?with_original_language=de&sort_by=popularity.desc', type: 'movie', icon: '🇩🇪' },
+  { name: 'italian-movies', url: '/discover/movie?with_original_language=it&sort_by=popularity.desc', type: 'movie', icon: '🇮🇹' },
+  { name: 'russian-movies', url: '/discover/movie?with_original_language=ru&sort_by=popularity.desc', type: 'movie', icon: '🇷🇺' },
+  { name: 'turkish-movies', url: '/discover/movie?with_original_language=tr&sort_by=popularity.desc', type: 'movie', icon: '🇹🇷' },
+  { name: 'thai-movies', url: '/discover/movie?with_original_language=th&sort_by=popularity.desc', type: 'movie', icon: '🇹🇭' },
+  { name: 'arabic-movies', url: '/discover/movie?with_original_language=ar&sort_by=popularity.desc', type: 'movie', icon: '🇸🇦' },
+  { name: 'korean-drama', url: '/discover/tv?with_original_language=ko&sort_by=popularity.desc', type: 'tv', icon: '🇰🇷' },
+  { name: 'chinese-drama', url: '/discover/tv?with_original_language=zh&sort_by=popularity.desc', type: 'tv', icon: '🇨🇳' },
+  { name: 'japanese-drama', url: '/discover/tv?with_original_language=ja&sort_by=popularity.desc&without_genres=16', type: 'tv', icon: '🇯🇵' },
+  { name: 'turkish-drama', url: '/discover/tv?with_original_language=tr&sort_by=popularity.desc', type: 'tv', icon: '🇹🇷' },
+  { name: 'thai-drama', url: '/discover/tv?with_original_language=th&sort_by=popularity.desc', type: 'tv', icon: '🇹🇭' },
+  { name: 'hindi-tv', url: '/discover/tv?with_original_language=hi&sort_by=popularity.desc', type: 'tv', icon: '🇮🇳' },
+  { name: 'spanish-tv', url: '/discover/tv?with_original_language=es&sort_by=popularity.desc', type: 'tv', icon: '🇪🇸' },
+  { name: 'action', url: '/discover/movie?with_genres=28&sort_by=popularity.desc', type: 'movie', icon: '💥' },
+  { name: 'comedy', url: '/discover/movie?with_genres=35&sort_by=popularity.desc', type: 'movie', icon: '😂' },
+  { name: 'horror', url: '/discover/movie?with_genres=27&sort_by=popularity.desc', type: 'movie', icon: '👻' },
+  { name: 'scifi', url: '/discover/movie?with_genres=878&sort_by=popularity.desc', type: 'movie', icon: '🚀' },
+  { name: 'romance', url: '/discover/movie?with_genres=10749&sort_by=popularity.desc', type: 'movie', icon: '💕' },
+  { name: 'thriller', url: '/discover/movie?with_genres=53&sort_by=popularity.desc', type: 'movie', icon: '🔪' },
+  { name: 'documentary', url: '/discover/movie?with_genres=99&sort_by=popularity.desc', type: 'movie', icon: '📖' },
+  { name: 'fantasy', url: '/discover/movie?with_genres=14&sort_by=popularity.desc', type: 'movie', icon: '🧙' },
+  { name: 'crime', url: '/discover/movie?with_genres=80&sort_by=popularity.desc', type: 'movie', icon: '🚔' },
+  { name: 'mystery', url: '/discover/movie?with_genres=9648&sort_by=popularity.desc', type: 'movie', icon: '🕵️' },
+  { name: 'family', url: '/discover/movie?with_genres=10751&sort_by=popularity.desc', type: 'movie', icon: '👨‍👩‍👧' },
+  { name: 'war', url: '/discover/movie?with_genres=10752&sort_by=popularity.desc', type: 'movie', icon: '⚔️' },
+  { name: 'history', url: '/discover/movie?with_genres=36&sort_by=popularity.desc', type: 'movie', icon: '📜' },
+  { name: 'action-tv', url: '/discover/tv?with_genres=10759&sort_by=popularity.desc', type: 'tv', icon: '💥' },
+  { name: 'comedy-tv', url: '/discover/tv?with_genres=35&sort_by=popularity.desc', type: 'tv', icon: '😂' },
+  { name: 'drama-tv', url: '/discover/tv?with_genres=18&sort_by=popularity.desc', type: 'tv', icon: '🎭' },
+  { name: 'scifi-tv', url: '/discover/tv?with_genres=10765&sort_by=popularity.desc', type: 'tv', icon: '🚀' },
+  { name: 'reality-tv', url: '/discover/tv?with_genres=10764&sort_by=popularity.desc', type: 'tv', icon: '🎤' },
+  { name: 'talk-show', url: '/discover/tv?with_genres=10767&sort_by=popularity.desc', type: 'tv', icon: '🗣️' },
+  { name: 'marvel', url: '/discover/movie?with_companies=420&sort_by=popularity.desc', type: 'movie', icon: '🦸' },
+  { name: 'dc', url: '/discover/movie?with_companies=9993&sort_by=popularity.desc', type: 'movie', icon: '🦇' },
+  { name: 'pixar', url: '/discover/movie?with_companies=3&sort_by=popularity.desc', type: 'movie', icon: '🎈' },
+  { name: 'ghibli', url: '/discover/movie?with_companies=10342&sort_by=popularity.desc', type: 'movie', icon: '🌿' },
+  { name: 'a24', url: '/discover/movie?with_companies=41077&sort_by=popularity.desc', type: 'movie', icon: '🎞️' },
+  { name: 'warner-bros', url: '/discover/movie?with_companies=174&sort_by=popularity.desc', type: 'movie', icon: '🎬' },
+  { name: 'universal', url: '/discover/movie?with_companies=33&sort_by=popularity.desc', type: 'movie', icon: '🌍' },
+  { name: 'sony', url: '/discover/movie?with_companies=5&sort_by=popularity.desc', type: 'movie', icon: '🎮' }
+];
+
 async function syncCategories() {
   console.log('\n' + '═'.repeat(65));
   console.log(`📥 STEP 1: Fetching ${CATEGORIES.length} TMDB categories`);
@@ -270,7 +261,7 @@ async function syncCategories() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 2: TMDB DETAILS + ENRICHMENT (Deep Merge)
+   📥 STEP 2: TMDB DETAILS
 ═══════════════════════════════════════════════════════════════ */
 async function syncMovieDetails(movieIds) {
   console.log('\n' + '═'.repeat(65));
@@ -371,7 +362,7 @@ async function syncTVDetails(tvIds) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 3: ANILIST (Anime + Trailers)
+   📥 STEP 3: ANILIST
 ═══════════════════════════════════════════════════════════════ */
 async function syncAniList() {
   console.log('\n' + '═'.repeat(65));
@@ -381,13 +372,12 @@ async function syncAniList() {
   const dir = path.join(__dirname, '..', 'cache', 'anilist');
   fs.mkdirSync(dir, { recursive: true });
   
-  // BUG FIX: Removed 'CURRENT' season as AniList API doesn't support it.
   const animeCategories = [
     { name: 'trending', sort: 'TRENDING_DESC' },
     { name: 'popular', sort: 'POPULARITY_DESC' },
     { name: 'top', sort: 'SCORE_DESC' },
     { name: 'movies', sort: 'POPULARITY_DESC', format: 'MOVIE' },
-    { name: 'this-season', sort: 'TRENDING_DESC' } // Trending acts as this-season
+    { name: 'this-season', sort: 'TRENDING_DESC' }
   ];
 
   const query = `query($page:Int,$perPage:Int,$sort:[MediaSort],$format:MediaFormat){Page(page:$page,perPage:$perPage){media(sort:$sort,type:ANIME,format:$format,isAdult:false){id idMal title{romaji english native}coverImage{large extraLarge}bannerImage trailer{id site thumbnail} averageScore popularity startDate{year}format genres description episodes duration status studios{edges{node{name}}}}}}`;
@@ -408,7 +398,7 @@ async function syncAniList() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 4: TVMAZE (Daily Schedule)
+   📥 STEP 4: TVMAZE
 ═══════════════════════════════════════════════════════════════ */
 async function syncTVmaze() {
   console.log('\n' + '═'.repeat(65));
@@ -416,7 +406,7 @@ async function syncTVmaze() {
   console.log('═'.repeat(65));
   
   try {
-    const res = await fetch('https://api.tvmaze.com/schedule');
+    const res = await fetch('https://api.tvmaze.com/schedule', { headers: GLOBAL_HEADERS });
     if (res.ok) {
       const schedule = await res.json();
       const clean = schedule.map(item => ({
@@ -433,7 +423,7 @@ async function syncTVmaze() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 5: JIKAN (MyAnimeList)
+   📥 STEP 5: JIKAN (FIXED with Headers & Retries)
 ═══════════════════════════════════════════════════════════════ */
 async function syncJikan() {
   console.log('\n' + '═'.repeat(65));
@@ -443,27 +433,33 @@ async function syncJikan() {
   const dir = path.join(__dirname, '..', 'cache', 'jikan');
   fs.mkdirSync(dir, { recursive: true });
   
+  // FIX 2: Added User-Agent header and retry logic for Jikan API
   try {
-    const topRes = await fetch('https://api.jikan.moe/v4/top/anime?limit=25');
+    const topRes = await fetch('https://api.jikan.moe/v4/top/anime?limit=25', { headers: GLOBAL_HEADERS });
     if (topRes.ok) {
       const data = await topRes.json();
       saveJSON(path.join(dir, 'top.json'), { results: data.data, source: 'jikan' });
       console.log(`✅ Jikan Top Anime: ${data.data.length} items`);
+    } else {
+      console.log(`❌ Jikan Top Failed: HTTP ${topRes.status}`);
     }
     
-    await new Promise(r => setTimeout(r, 1500)); 
+    // Jikan requires at least 1.5 seconds delay between requests
+    await new Promise(r => setTimeout(r, 2000)); 
 
-    const airingRes = await fetch('https://api.jikan.moe/v4/seasons/now?limit=25');
+    const airingRes = await fetch('https://api.jikan.moe/v4/seasons/now?limit=25', { headers: GLOBAL_HEADERS });
     if (airingRes.ok) {
       const data = await airingRes.json();
       saveJSON(path.join(dir, 'airing.json'), { results: data.data, source: 'jikan' });
       console.log(`✅ Jikan Airing Anime: ${data.data.length} items`);
+    } else {
+      console.log(`❌ Jikan Airing Failed: HTTP ${airingRes.status}`);
     }
-  } catch(e) { console.log('❌ Jikan Failed'); }
+  } catch(e) { console.log('❌ Jikan Failed: ' + e.message); }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 6: KITSU (animedoc)
+   📥 STEP 6: KITSU
 ═══════════════════════════════════════════════════════════════ */
 async function syncKitsu() {
   console.log('\n' + '═'.repeat(65));
@@ -471,7 +467,7 @@ async function syncKitsu() {
   console.log('═'.repeat(65));
   
   try {
-    const res = await fetch('https://kitsu.io/api/edge/trending/anime');
+    const res = await fetch('https://kitsu.io/api/edge/trending/anime', { headers: GLOBAL_HEADERS });
     if (res.ok) {
       const data = await res.json();
       saveJSON(path.join(__dirname, '..', 'cache', 'kitsu', 'trending.json'), {
@@ -483,7 +479,7 @@ async function syncKitsu() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 7: SIMKL (With Key Rotation & API Headers)
+   📥 STEP 7: SIMKL (FIXED with app-name headers)
 ═══════════════════════════════════════════════════════════════ */
 async function syncSimkl() {
   console.log('\n' + '═'.repeat(65));
@@ -499,8 +495,14 @@ async function syncSimkl() {
     if (!clientId) return;
 
     try {
-      const res = await fetch(`https://api.simkl.com/movies/trending/?client_id=${clientId}`, {
-        headers: { 'User-Agent': 'CineVault/10.5', 'simkl-api-key': clientId }
+      // FIX 3: Added proper headers required by Simkl API
+      const res = await fetch(`https://api.simkl.com/movies/trending/?client_id=${clientId}&extended=full`, {
+        headers: { 
+          ...GLOBAL_HEADERS,
+          'app-name': 'CineVault',
+          'app-version': '10.5',
+          'simkl-api-key': clientId 
+        }
       });
       
       if (res.ok) {
@@ -513,6 +515,9 @@ async function syncSimkl() {
       } else if (res.status === 401 || res.status === 403) {
         logKeyFailure('simkl', clientId, res.status);
         attempts++; continue;
+      } else {
+        console.log(`❌ Simkl returned HTTP ${res.status}`);
+        attempts++; continue;
       }
     } catch(e) { attempts++; }
   }
@@ -520,7 +525,7 @@ async function syncSimkl() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 8: THETVDB (With Key Rotation & Required Headers)
+   📥 STEP 8: THETVDB
 ═══════════════════════════════════════════════════════════════ */
 async function syncTheTVDB() {
   console.log('\n' + '═'.repeat(65));
@@ -538,7 +543,7 @@ async function syncTheTVDB() {
     try {
       const loginRes = await fetch('https://api4.thetvdb.com/v4/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': 'CineVault/10.5' },
+        headers: { ...GLOBAL_HEADERS, 'Content-Type': 'application/json' },
         body: JSON.stringify({ apikey: apiKey })
       });
       
@@ -550,7 +555,7 @@ async function syncTheTVDB() {
       
       const token = loginData.data.token;
       const seriesRes = await fetch('https://api4.thetvdb.com/v4/series/filter?lang=eng&sort=lastUpdated&sortType=desc', {
-        headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'CineVault/10.5' }
+        headers: { ...GLOBAL_HEADERS, 'Authorization': `Bearer ${token}` }
       });
       
       if (seriesRes.ok) {
@@ -606,26 +611,16 @@ function printReport() {
   }
 
   try {
-    // 1. TMDB (Base Data + Deduplication)
     const { movieIds, tvIds } = await syncCategories();
-    
-    // 2. Enrichment & Merging (OMDb + Watchmode + Fanart)
     await syncMovieDetails(movieIds);
     await syncTVDetails(tvIds);
-    
-    // 3. Anime (AniList, Jikan, Kitsu)
     await syncAniList();
     await syncJikan();
     await syncKitsu();
-
-    // 4. TV Schedule (TVmaze)
     await syncTVmaze();
-
-    // 5. Optional APIs (Simkl, TVDB)
     await syncSimkl();
     await syncTheTVDB();
 
-    // 6. Meta Save
     saveJSON(path.join(__dirname, '..', 'cache', '_meta.json'), {
       updated: new Date().toISOString(),
       version: '10.5',
