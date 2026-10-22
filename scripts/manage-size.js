@@ -1,9 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════
-   manage-size.js — v10.6 (ULTIMATE AUTO-HEALING SPACE MANAGER)
-   Compatible with: sync-all.js v10.6 (9 sources)
+   manage-size.js — v10.7 (BACKUP-AWARE AUTO-HEALING SPACE MANAGER)
+   Compatible with: sync-all.js v10.6, backup-r2.js v1.0
    Features:
      • Auto-heal: deletes empty & corrupt JSON files
-     • Auto-protect: essential category files never deleted
+     • Auto-protect: essential category files + backup index
+     • Backup recency check (warns if R2 backup is stale)
      • Stale-first priority (oldest 7+ days deleted first)
      • Per-source awareness (TMDB media vs categories)
      • Dry-run mode (DRY_RUN=1)
@@ -11,6 +12,7 @@
      • Cleanup audit log (_cleanup_log.json)
      • Safe unlink with retries
      • Auto-scaled chunk deletion
+     • Top-N largest deletions report
 ═══════════════════════════════════════════════════════════════ */
 const fs = require('fs');
 const path = require('path');
@@ -22,6 +24,7 @@ const MAX_SIZE_MB     = parseInt(process.env.MAX_SIZE_MB, 10)     || 95;
 const TARGET_SIZE_MB  = parseInt(process.env.TARGET_SIZE_MB, 10)  || 80;
 const DELETE_CHUNK_MB = parseInt(process.env.DELETE_CHUNK_MB, 10) || 20;
 const DRY_RUN         = process.env.DRY_RUN === '1';
+const VERBOSE         = process.env.VERBOSE === '1';
 const CACHE_ROOT      = path.join(__dirname, '..', 'cache');
 
 const MAX_SIZE_BYTES     = MAX_SIZE_MB * 1024 * 1024;
@@ -34,16 +37,30 @@ const IN_PROGRESS_MS = 60 * 1000; // 60 seconds
 // Files older than this get deletion priority
 const STALE_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+// Backup index older than this triggers a warning
+const BACKUP_STALE_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+/* ─────────────────────────────────────────────────────────────
+   🛡️ METADATA FILES (never counted as categories)
+───────────────────────────────────────────────────────────── */
+const METADATA_FILES = new Set([
+  '_meta.json',
+  '_cleanup_log.json',
+  '_backup_index.json'
+]);
+
 /* ─────────────────────────────────────────────────────────────
    🛡️ PROTECTED FILES — Never deleted (UI entry points)
 ───────────────────────────────────────────────────────────── */
 const PROTECTED_PATHS = new Set([
-  '_meta.json',
-  '_cleanup_log.json',
-  // TMDB essential categories
+  // Metadata
+  ...METADATA_FILES,
+
+  // TMDB — core navigation categories
   'tmdb/categories/trending-all.json',
   'tmdb/categories/trending-movies.json',
   'tmdb/categories/trending-tv.json',
+  'tmdb/categories/trending-people.json',
   'tmdb/categories/popular-movies.json',
   'tmdb/categories/top-rated-movies.json',
   'tmdb/categories/popular-tv.json',
@@ -51,15 +68,35 @@ const PROTECTED_PATHS = new Set([
   'tmdb/categories/upcoming-movies.json',
   'tmdb/categories/now-playing.json',
   'tmdb/categories/airing-today.json',
-  // AniList essentials
+  'tmdb/categories/on-the-air.json',
+  'tmdb/categories/latest-movies.json',
+  'tmdb/categories/latest-tv.json',
+
+  // AniList — essentials
   'anilist/trending.json',
   'anilist/popular.json',
   'anilist/top.json',
-  // Other sources — first-listed essentials
+  'anilist/this-season.json',
+  'anilist/upcoming.json',
+  'anilist/airing.json',
+
+  // TVmaze — essentials
   'tvmaze/schedule.json',
+  'tvmaze/web-schedule.json',
+  'tvmaze/shows.json',
+
+  // Jikan — essentials
   'jikan/top-overall.json',
+  'jikan/top-airing.json',
+  'jikan/season-now.json',
+
+  // Kitsu — essentials
   'kitsu/trending.json',
-  'tvdb/latest-series.json'
+  'kitsu/popular.json',
+
+  // TheTVDB — essentials
+  'tvdb/latest-series.json',
+  'tvdb/search-series.json'
 ]);
 
 /* ─────────────────────────────────────────────────────────────
@@ -72,6 +109,10 @@ function log(msg, isDry = false) {
   const prefix = isDry ? '🧪 [DRY] ' : '';
   console.log(prefix + msg);
   logEntries.push({ time: new Date().toISOString(), message: msg });
+}
+
+function vlog(msg) {
+  if (VERBOSE) console.log(`   🔍 ${msg}`);
 }
 
 function saveLog() {
@@ -87,7 +128,7 @@ function saveLog() {
     }
     const combined = [...existing, { time: new Date().toISOString(), entries: logEntries }]
       .filter(e => e && e.entries)
-      .slice(-50); // keep last 50 runs
+      .slice(-50);
     fs.writeFileSync(LOG_FILE, JSON.stringify(combined, null, 2));
   } catch (e) {
     console.log(`   ⚠️ Failed to save cleanup log: ${e.message}`);
@@ -95,7 +136,7 @@ function saveLog() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   🔧 SAFE FILE OPERATIONS (with retries)
+   🔧 SAFE FILE OPERATIONS
 ───────────────────────────────────────────────────────────── */
 function safeStat(fullPath) {
   try { return fs.statSync(fullPath); } catch (e) { return null; }
@@ -114,7 +155,6 @@ function safeUnlink(fullPath, maxRetries = 3) {
     } catch (e) {
       if (e.code === 'ENOENT') return true;
       if (i === maxRetries - 1) return false;
-      // tiny backoff
       const wait = Date.now() + 50;
       while (Date.now() < wait) { /* busy wait 50ms */ }
     }
@@ -129,6 +169,33 @@ function isValidJSONFile(fullPath) {
     return true;
   } catch (e) {
     return false;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   🩺 BACKUP RECENCY CHECK (soft warning, non-blocking)
+───────────────────────────────────────────────────────────── */
+function checkBackupFreshness() {
+  const idxPath = path.join(CACHE_ROOT, '_backup_index.json');
+  if (!fs.existsSync(idxPath)) {
+    log(`\n⚠️  Backup index not found (${path.basename(idxPath)}) — R2 backup may not have run yet.`);
+    log(`   → Files deleted now will NOT be recoverable from R2.`);
+    log(`   → Run "node scripts/backup-r2.js" first for maximum safety.`);
+    return;
+  }
+
+  const stat = safeStat(idxPath);
+  if (!stat) return;
+
+  const ageMs = Date.now() - stat.mtimeMs;
+  const ageMin = Math.round(ageMs / 60000);
+
+  if (ageMs > BACKUP_STALE_MS) {
+    log(`\n⚠️  Backup index is ${ageMin} minutes old (stale > ${Math.round(BACKUP_STALE_MS / 60000)} min).`);
+    log(`   → Deleting files now may exceed R2 backup coverage.`);
+    log(`   → Consider re-running "node scripts/backup-r2.js".`);
+  } else {
+    log(`\n✅ Backup index is fresh (${ageMin} min old) — safe to delete.`);
   }
 }
 
@@ -226,7 +293,7 @@ function showDatabaseBreakdown(allFiles) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   🧹 CLEANUP EMPTY FOLDERS (safe)
+   🧹 CLEANUP EMPTY FOLDERS
 ───────────────────────────────────────────────────────────── */
 function cleanupEmptyFolders(dir) {
   if (!fs.existsSync(dir)) return;
@@ -256,6 +323,7 @@ function cleanupEmptyFolders(dir) {
 
 /* ─────────────────────────────────────────────────────────────
    🩺 AUTO-HEAL (delete empty & corrupt files first)
+   ⚠️ Never touches _backup_index.json or protected paths
 ───────────────────────────────────────────────────────────── */
 function autoHeal(allFiles) {
   let healedCount = 0;
@@ -263,12 +331,14 @@ function autoHeal(allFiles) {
   const details = [];
 
   for (const file of allFiles) {
+    // Safety: never heal a protected path
+    if (PROTECTED_PATHS.has(file.relativePath)) continue;
+
     let reason = null;
 
     if (file.size === 0) {
       reason = 'empty';
     } else if (!file.isFresh && file.size < 1024 * 1024) {
-      // Only validate non-fresh, non-huge files
       if (!isValidJSONFile(file.path)) reason = 'corrupt';
     }
 
@@ -311,14 +381,14 @@ function updateMetaFile(stats) {
     const finalFiles = getAllFilesInfo(CACHE_ROOT);
     const finalSize = getTotalSize(finalFiles);
 
-    meta.cache_size_mb             = parseFloat(bytesToMB(finalSize));
-    meta.total_files               = finalFiles.length;
-    meta.last_cleanup              = new Date().toISOString();
+    meta.cache_size_mb              = parseFloat(bytesToMB(finalSize));
+    meta.total_files                = finalFiles.length;
+    meta.last_cleanup               = new Date().toISOString();
     meta.last_cleanup_removed_files = stats.deletedCount || 0;
     meta.last_cleanup_removed_mb    = parseFloat(bytesToMB(stats.deletedSize || 0));
     meta.last_cleanup_healed_files  = stats.healedCount || 0;
     meta.cache_status = finalSize <= MAX_SIZE_BYTES ? 'Healthy' : 'Warning';
-    meta.cache_version = '10.6';
+    meta.cache_version = '10.7';
 
     fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
     log(`   📝 Updated _meta.json → ${meta.cache_size_mb} MB | Status: ${meta.cache_status}`);
@@ -345,7 +415,22 @@ function deletionPriority(a, b) {
   };
   const ra = rank(a), rb = rank(b);
   if (ra !== rb) return ra - rb;
-  return a.mtime - b.mtime; // oldest first within same rank
+  return a.mtime - b.mtime;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   📊 Top-N largest deletions report
+───────────────────────────────────────────────────────────── */
+function showTopDeletions(deletedFiles, n = 5) {
+  if (!deletedFiles.length) return;
+  const top = deletedFiles
+    .slice()
+    .sort((a, b) => b.size - a.size)
+    .slice(0, n);
+  log(`\n📊 Top ${top.length} largest deletions:`);
+  top.forEach((f, i) => {
+    log(`   ${i + 1}. ${f.relativePath} → ${bytesToMB(f.size)} MB`);
+  });
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -355,7 +440,7 @@ function deletionPriority(a, b) {
   const startTime = Date.now();
 
   console.log('╔═══════════════════════════════════════════════════════════════╗');
-  console.log('║   📊 CACHE SIZE MANAGER — v10.6 (Auto-Healing Smart)          ║');
+  console.log('║   📊 CACHE SIZE MANAGER — v10.7 (Backup-Aware)                ║');
   console.log(`║   Max: ${String(MAX_SIZE_MB).padStart(3)} MB  |  Target: ${String(TARGET_SIZE_MB).padStart(3)} MB  |  Chunk: ${String(DELETE_CHUNK_MB).padStart(3)} MB     ║`);
   console.log(`║   Mode: ${DRY_RUN ? 'DRY-RUN (no changes)' : 'LIVE (will modify files)   '}                             ║`);
   console.log('╚═══════════════════════════════════════════════════════════════╝');
@@ -371,19 +456,23 @@ function deletionPriority(a, b) {
   let allFiles = getAllFilesInfo(CACHE_ROOT);
   let currentSize = getTotalSize(allFiles);
   let currentMB = bytesToMB(currentSize);
+  const protectedCount = PROTECTED_PATHS.size - METADATA_FILES.size;
 
   showDatabaseBreakdown(allFiles);
-  log(`\n📦 Total Cache Size: ${currentMB} MB (${allFiles.length} files, ${PROTECTED_PATHS.size - 2} protected)`);
+  log(`\n📦 Total Cache Size: ${currentMB} MB (${allFiles.length} files, ${protectedCount} protected categories + ${METADATA_FILES.size} metadata)`);
 
-  /* ─── Step 2: Auto-heal empty/corrupt files ─── */
+  /* ─── Step 2: Backup recency check (soft warning) ─── */
+  checkBackupFreshness();
+
+  /* ─── Step 3: Auto-heal empty/corrupt files ─── */
   const healStats = autoHeal(allFiles);
 
-  /* ─── Step 3: Re-scan after heal ─── */
+  /* ─── Step 4: Re-scan after heal ─── */
   allFiles = getAllFilesInfo(CACHE_ROOT);
   currentSize = getTotalSize(allFiles);
   currentMB = bytesToMB(currentSize);
 
-  /* ─── Step 4: Check limit ─── */
+  /* ─── Step 5: Check limit ─── */
   if (currentSize <= MAX_SIZE_BYTES) {
     log(`\n✅ Under ${MAX_SIZE_MB} MB limit (${currentMB} MB). No deletion needed.`);
     updateMetaFile({ deletedCount: 0, deletedSize: 0, healedCount: healStats.healedCount });
@@ -396,18 +485,19 @@ function deletionPriority(a, b) {
   log(`\n⚠️  OVER ${MAX_SIZE_MB} MB LIMIT by ${bytesToMB(overflowBytes)} MB!`);
   log(`   Target: delete until ≤ ${TARGET_SIZE_MB} MB`);
 
-  /* ─── Step 5: Auto-scale chunk if needed ─── */
+  /* ─── Step 6: Auto-scale chunk if needed ─── */
   const neededBytes = currentSize - TARGET_SIZE_BYTES;
   const effectiveChunkBytes = Math.max(DELETE_CHUNK_BYTES, Math.ceil(neededBytes * 1.15));
   log(`   Effective deletion chunk: ${bytesToMB(effectiveChunkBytes)} MB`);
 
-  /* ─── Step 6: Sort & delete ─── */
+  /* ─── Step 7: Sort & delete ─── */
   let filesToDelete = allFiles.slice().sort(deletionPriority);
 
   let deletedSize = 0;
   let deletedCount = 0;
   let failedCount = 0;
   const deletedByType = {};
+  const deletedFilesList = [];
   let currentSimulatedSize = currentSize;
 
   for (const file of filesToDelete) {
@@ -425,10 +515,11 @@ function deletionPriority(a, b) {
       deletedSize += file.size;
       currentSimulatedSize -= file.size;
       deletedCount++;
+      deletedFilesList.push(file);
       const key = `${file.db.toUpperCase()} (${file.isMedia ? 'media' : 'category'}${file.isStale ? ', stale' : ''})`;
       deletedByType[key] = (deletedByType[key] || 0) + 1;
-      if (DRY_RUN) {
-        log(`   🧪 [DRY] Would delete: ${file.relativePath}`, true);
+      if (DRY_RUN || VERBOSE) {
+        log(`   ${DRY_RUN ? '🧪 [DRY] Would delete' : '🗑️ Deleting'}: ${file.relativePath} (${bytesToMB(file.size)} MB)`, DRY_RUN);
       }
     } else {
       failedCount++;
@@ -436,10 +527,10 @@ function deletionPriority(a, b) {
     }
   }
 
-  /* ─── Step 7: Cleanup empty folders ─── */
+  /* ─── Step 8: Cleanup empty folders ─── */
   cleanupEmptyFolders(CACHE_ROOT);
 
-  /* ─── Step 8: Final report ─── */
+  /* ─── Step 9: Final report ─── */
   const finalFiles = getAllFilesInfo(CACHE_ROOT);
   const newSize = getTotalSize(finalFiles);
   const newMB = bytesToMB(newSize);
@@ -452,10 +543,13 @@ function deletionPriority(a, b) {
   });
   log(`📦 New total size: ${newMB} MB`);
 
-  /* ─── Step 9: Update meta ─── */
+  /* ─── Step 10: Top-N largest deletions ─── */
+  showTopDeletions(deletedFilesList, 5);
+
+  /* ─── Step 11: Update meta ─── */
   updateMetaFile({ deletedCount, deletedSize, healedCount: healStats.healedCount });
 
-  /* ─── Step 10: Final status ─── */
+  /* ─── Step 12: Final status ─── */
   if (newSize > MAX_SIZE_BYTES) {
     log(`\n⚠️  Still over ${MAX_SIZE_MB} MB by ${bytesToMB(newSize - MAX_SIZE_BYTES)} MB.`);
     log(`   → Re-run this script or increase DELETE_CHUNK_MB env var.`);
