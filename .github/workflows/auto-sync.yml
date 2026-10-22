@@ -1,14 +1,13 @@
-name: Auto Cache Sync (Ultimate Engine v10.5)
+name: Auto Cache Sync (Ultimate Engine v10.6)
 
 on:
   schedule:
-    - cron: '0 */2 * * *' # প্রতি ২ ঘণ্টায় রান হবে
-  workflow_dispatch: # ম্যানুয়ালি রান করার অপশন
+    - cron: '0 */2 * * *'   # প্রতি ২ ঘণ্টায়
+  workflow_dispatch:        # ম্যানুয়াল রান
 
 permissions:
   contents: write
 
-# যদি আগের কোনো সিঙ্ক চলতে থাকে, তবে সেটি বাতিল করে নতুনটি শুরু হবে
 concurrency:
   group: cache-sync-${{ github.ref }}
   cancel-in-progress: true
@@ -16,25 +15,28 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 60 # Timeout ৬০ মিনিট (ভারী ডাটা প্রসেস করার জন্য)
-    
+    timeout-minutes: 90   # ভারী ডাটার জন্য ৯০ মিনিট
+
     env:
-      NODE_OPTIONS: "--max-old-space-size=4096" # বড় JSON ফাইল প্রসেস করার জন্য ৪ জিবি মেমরি
+      NODE_OPTIONS: "--max-old-space-size=4096"
 
     steps:
+      # ═════════════════════════════════════════════════════════════
+      # ১. চেকআউট ও সেটআপ
+      # ═════════════════════════════════════════════════════════════
       - name: 📥 Checkout Main Repository
         uses: actions/checkout@v4
         with:
           path: src
           fetch-depth: 1
 
-      - name: 🟢 Setup Node.js Environment
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: 📦 Cache Node Modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: src/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('src/package-lock.json', 'src/package.json') }}
@@ -43,9 +45,12 @@ jobs:
 
       - name: 📦 Install Dependencies
         working-directory: src
-        run: npm install
+        run: npm install --no-audit --no-fund
 
-      - name: 🔄 Load Previous Cache (from cache-data branch)
+      # ═════════════════════════════════════════════════════════════
+      # ২. পুরনো ক্যাশ লোড (cache-data ব্রাঞ্চ থেকে)
+      # ═════════════════════════════════════════════════════════════
+      - name: 🔄 Load Previous Cache (cache-data branch)
         run: |
           mkdir -p prev-cache
           cd prev-cache
@@ -55,29 +60,47 @@ jobs:
             git checkout -q FETCH_HEAD
             mkdir -p ../src/cache
             cp -r cache/* ../src/cache/ 2>/dev/null || true
-            echo "✅ Previous cache loaded successfully!"
+            echo "✅ Previous cache loaded"
             du -sh ../src/cache || true
           else
-            echo "ℹ️ First run — no previous cache found."
+            echo "ℹ️ First run — no previous cache"
           fi
 
-      - name: 🧹 Manage Cache Size (95 MB Limit)
-        working-directory: src
-        run: node scripts/manage-size.js
-
-      - name: 🚀 Sync Fresh Data (10 Databases)
+      # ═════════════════════════════════════════════════════════════
+      # ৩. নতুন ডাটা সিঙ্ক (৯ সোর্স)
+      # ═════════════════════════════════════════════════════════════
+      - name: 🚀 Sync Fresh Data (9 Sources)
         working-directory: src
         env:
           TMDB_KEYS: ${{ secrets.TMDB_KEYS }}
           OMDB_KEYS: ${{ secrets.OMDB_KEYS }}
           WATCHMODE_KEYS: ${{ secrets.WATCHMODE_KEYS }}
           FANART_KEYS: ${{ secrets.FANART_KEYS }}
-          SIMKL_CLIENT_ID: ${{ secrets.SIMKL_CLIENT_ID }}
           TVDB_API_KEY: ${{ secrets.TVDB_API_KEY }}
-          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
-          WORKER_SECRET: ${{ secrets.WORKER_SECRET }}
         run: node scripts/sync-all.js
 
+      # ═════════════════════════════════════════════════════════════
+      # ৪. ডিলিটের আগে R2 ব্যাকআপ (গুরুত্বপূর্ণ!)
+      # ═════════════════════════════════════════════════════════════
+      - name: ☁️ Backup Cache to Cloudflare R2
+        working-directory: src
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+        run: node scripts/backup-r2.js
+
+      # ═════════════════════════════════════════════════════════════
+      # ৫. ক্যাশ সাইজ ম্যানেজমেন্ট (ডিলিট)
+      # ═════════════════════════════════════════════════════════════
+      - name: 🧹 Manage Cache Size (Auto-Heal + Trim)
+        working-directory: src
+        run: node scripts/manage-size.js
+
+      # ═════════════════════════════════════════════════════════════
+      # ৬. ক্লিন ডিপ্লয় রিপো প্রস্তুত
+      # ═════════════════════════════════════════════════════════════
       - name: 📦 Prepare Clean Deploy Repository
         run: |
           mkdir -p deploy
@@ -88,39 +111,48 @@ jobs:
           git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           mkdir -p cache
           cp -r ../src/cache/* cache/ 2>/dev/null || true
-          echo "📊 Final cache size to deploy:"
+          echo "📊 Final cache size:"
           du -sh cache/
 
+      # ═════════════════════════════════════════════════════════════
+      # ৭. cache-data ব্রাঞ্চে পুশ
+      # ═════════════════════════════════════════════════════════════
       - name: 🚀 Force-Push to cache-data branch
         working-directory: deploy
         run: |
           git add -A
-          # চেক করা হচ্ছে কোনো পরিবর্তন আছে কিনা
           if git diff --quiet && git diff --staged --quiet; then
-            echo "ℹ️ No changes detected in cache. Skipping commit."
+            echo "ℹ️ No changes — skipping commit"
           else
             git commit -m "chore: auto-sync cache [$(date -u +%Y-%m-%d-%H)]" --quiet
             git branch -M cache-data
             git push -f origin cache-data
-            echo "✅ Successfully pushed to cache-data branch!"
+            echo "✅ Pushed to cache-data branch"
           fi
 
-      - name: 📦 Backup Cache as Artifact (Safety)
+      # ═════════════════════════════════════════════════════════════
+      # ৮. আর্টিফ্যাক্ট ব্যাকআপ (extra safety)
+      # ═════════════════════════════════════════════════════════════
+      - name: 📦 Upload Cache as Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cache-backup-${{ github.run_number }}
           path: deploy/cache/
-          retention-days: 3
+          retention-days: 1
 
+      # ═════════════════════════════════════════════════════════════
+      # ৯. Cloudflare Worker-এ নোটিফাই (/webhook)
+      # ═════════════════════════════════════════════════════════════
       - name: 🔔 Notify Cloudflare Worker
-        if: success() # সিঙ্ক সফল হলেই কেবল নোটিফাই করবে
+        if: success()
         run: |
-          if [ -n "${{ secrets.CLOUDFLARE_WORKER_URL }}" ]; then
-            curl -X POST "${{ secrets.CLOUDFLARE_WORKER_URL }}" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.WORKER_SECRET }}" \
-            -d '{"event": "sync_complete", "status": "success", "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}'
-            echo "✅ Cloudflare Worker notified successfully."
+          if [ -n "${{ secrets.CLOUDFLARE_WORKER_URL }}" ] && [ -n "${{ secrets.WORKER_SECRET }}" ]; then
+            curl -X POST "${{ secrets.CLOUDFLARE_WORKER_URL }}/webhook" \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${{ secrets.WORKER_SECRET }}" \
+              -d '{"event":"sync_complete","status":"success","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}'
+            echo "✅ Worker notified (cache namespace busted)"
           else
-            echo "⚠️ No Cloudflare Worker URL found, skipping notification."
+            echo "⚠️ Skipping worker notification (missing CLOUDFLARE_WORKER_URL or WORKER_SECRET)"
           fi
