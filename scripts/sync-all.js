@@ -1,19 +1,19 @@
 /* ═══════════════════════════════════════════════════════════════
-   sync-all.js — v10.5 ULTIMATE EXPLICIT MULTI-SOURCE ENGINE
-   FIXED: Simkl 401 Error, Jikan Block, Key Stats Penalty
+   sync-all.js — v10.6 ULTIMATE 9-SOURCE ENGINE (Simkl Removed)
+   Sources: TMDB, AniList, TVmaze, OMDb, Watchmode, Fanart.tv,
+            Jikan, TheTVDB, Kitsu
 ═══════════════════════════════════════════════════════════════ */
 const fs = require('fs');
 const path = require('path');
 
 /* ═══════════════════════════════════════════════════════════════
-   🔑 KEY MANAGEMENT
+   🔑 KEY MANAGEMENT (Simkl removed)
 ═══════════════════════════════════════════════════════════════ */
 const KEYS = {
   tmdb: (process.env.TMDB_KEYS || '').split(',').map(k => k.trim()).filter(Boolean),
   omdb: (process.env.OMDB_KEYS || '').split(',').map(k => k.trim()).filter(Boolean),
   watchmode: (process.env.WATCHMODE_KEYS || '').split(',').map(k => k.trim()).filter(Boolean),
   fanart: (process.env.FANART_KEYS || '').split(',').map(k => k.trim()).filter(Boolean),
-  simkl: (process.env.SIMKL_CLIENT_ID || '').split(',').map(k => k.trim()).filter(Boolean),
   tvdb: (process.env.TVDB_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean)
 };
 
@@ -21,8 +21,8 @@ const BASE_TMDB = 'https://api.themoviedb.org/3';
 const MOVIES_PER_SYNC = 250;
 const TV_PER_SYNC = 250;
 
-const keyStats = { tmdb: {}, omdb: {}, watchmode: {}, fanart: {}, simkl: {}, tvdb: {} };
-const keyIdx = { tmdb: 0, omdb: 0, watchmode: 0, fanart: 0, simkl: 0, tvdb: 0 };
+const keyStats = { tmdb: {}, omdb: {}, watchmode: {}, fanart: {}, tvdb: {} };
+const keyIdx = { tmdb: 0, omdb: 0, watchmode: 0, fanart: 0, tvdb: 0 };
 
 function maskKey(key) {
   if (!key || key.length < 8) return '***';
@@ -40,7 +40,6 @@ function getKey(pool) {
 }
 
 function logKeyFailure(pool, key, status) {
-  // FIX 1: Removed the +100 penalty that was showing fake 101 calls
   console.log(`   ⚠️ [${pool.toUpperCase()} FAIL] ${maskKey(key)} → HTTP ${status}`);
 }
 
@@ -50,10 +49,10 @@ function saveJSON(filePath, data) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   🌐 API FETCHING UTILITIES (Fixed with User-Agent for Cloudflare)
+   🌐 API FETCHING UTILITIES
 ═══════════════════════════════════════════════════════════════ */
 const GLOBAL_HEADERS = {
-  'User-Agent': 'CineVault/10.5 (https://github.com/Ankorbanik/movie-cache)',
+  'User-Agent': 'CineVault/10.6 (https://github.com/Ankorbanik/movie-cache)',
   'Accept': 'application/json'
 };
 
@@ -66,7 +65,7 @@ async function fetchAPI(url, maxAttempts = 3) {
       if (res.status === 401 || res.status === 403) return { __error: res.status };
       if (!res.ok) return null;
       return await res.json();
-    } catch(e) { await new Promise(r => setTimeout(r, 1000)); }
+    } catch (e) { await new Promise(r => setTimeout(r, 1000)); }
   }
   return null;
 }
@@ -79,11 +78,11 @@ async function fetchGraphQL(url, query, variables) {
       body: JSON.stringify({ query, variables })
     });
     return await res.json();
-  } catch(e) { return null; }
+  } catch (e) { return null; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 DATA FETCHERS (Individual APIs)
+   📥 ENRICHMENT FETCHERS (OMDb, Watchmode, Fanart)
 ═══════════════════════════════════════════════════════════════ */
 async function fetchOMDb(imdbId) {
   if (!imdbId) return null;
@@ -114,7 +113,7 @@ async function fetchWatchmode(imdbId) {
     if (!key) return null;
     const data = await fetchAPI(`https://api.watchmode.com/v1/title/${imdbId}/sources/?apiKey=${key}&regions=IN,US,GB`);
     if (data && Array.isArray(data) && data.length > 0) return data;
-    if (data === null) { attempts++; continue; } 
+    if (data === null) { attempts++; continue; }
     return null;
   }
   return null;
@@ -138,19 +137,30 @@ async function fetchFanart(tmdbId, type = 'movies') {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 1: TMDB CATEGORIES
+   📥 STEP 1: TMDB — FULL CATEGORIES (70+)
 ═══════════════════════════════════════════════════════════════ */
 const CATEGORIES = [
+  // Trending
   { name: 'trending-all', url: '/trending/all/week', type: 'mixed', icon: '🔥' },
   { name: 'trending-movies', url: '/trending/movie/week', type: 'movie', icon: '🎬' },
   { name: 'trending-tv', url: '/trending/tv/week', type: 'tv', icon: '📺' },
+  { name: 'trending-people', url: '/trending/person/week', type: 'person', icon: '👤' },
+
+  // General movie lists
   { name: 'popular-movies', url: '/movie/popular', type: 'movie', icon: '⭐' },
   { name: 'top-rated-movies', url: '/movie/top_rated', type: 'movie', icon: '🏆' },
   { name: 'upcoming-movies', url: '/movie/upcoming', type: 'movie', icon: '📅' },
   { name: 'now-playing', url: '/movie/now_playing', type: 'movie', icon: '🎥' },
+  { name: 'latest-movies', url: '/movie/latest', type: 'movie', icon: '🆕' },
+
+  // General TV lists
   { name: 'popular-tv', url: '/tv/popular', type: 'tv', icon: '⭐' },
   { name: 'top-rated-tv', url: '/tv/top_rated', type: 'tv', icon: '🏆' },
   { name: 'airing-today', url: '/tv/airing_today', type: 'tv', icon: '📡' },
+  { name: 'on-the-air', url: '/tv/on_the_air', type: 'tv', icon: '📶' },
+  { name: 'latest-tv', url: '/tv/latest', type: 'tv', icon: '🆕' },
+
+  // Streaming networks
   { name: 'netflix', url: '/discover/tv?with_networks=213', type: 'tv', icon: '🎯' },
   { name: 'prime-video', url: '/discover/tv?with_networks=1024', type: 'tv', icon: '📦' },
   { name: 'disney-plus', url: '/discover/tv?with_networks=2739', type: 'tv', icon: '🏰' },
@@ -159,13 +169,22 @@ const CATEGORIES = [
   { name: 'hulu', url: '/discover/tv?with_networks=453', type: 'tv', icon: '🟢' },
   { name: 'paramount-plus', url: '/discover/tv?with_networks=4330', type: 'tv', icon: '⛰️' },
   { name: 'peacock', url: '/discover/tv?with_networks=3353', type: 'tv', icon: '🦚' },
+  { name: 'netflix-movies', url: '/discover/movie?with_companies=213', type: 'movie', icon: '🎯' },
+  { name: 'prime-movies', url: '/discover/movie?with_companies=20580', type: 'movie', icon: '📦' },
+
+  // Anime
   { name: 'anime-trending', url: '/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc', type: 'tv', icon: '🎌' },
   { name: 'anime-movies', url: '/discover/movie?with_genres=16&with_original_language=ja&sort_by=popularity.desc', type: 'movie', icon: '🎨' },
   { name: 'animation-general', url: '/discover/movie?with_genres=16&sort_by=popularity.desc', type: 'movie', icon: '🎭' },
+
+  // Regional movies
   { name: 'hindi-movies', url: '/discover/movie?with_original_language=hi&sort_by=popularity.desc', type: 'movie', icon: '🇮🇳' },
   { name: 'bengali-movies', url: '/discover/movie?with_original_language=bn&sort_by=popularity.desc', type: 'movie', icon: '🇧🇩' },
   { name: 'tamil-movies', url: '/discover/movie?with_original_language=ta&sort_by=popularity.desc', type: 'movie', icon: '🎬' },
   { name: 'telugu-movies', url: '/discover/movie?with_original_language=te&sort_by=popularity.desc', type: 'movie', icon: '🎬' },
+  { name: 'malayalam-movies', url: '/discover/movie?with_original_language=ml&sort_by=popularity.desc', type: 'movie', icon: '🎬' },
+  { name: 'kannada-movies', url: '/discover/movie?with_original_language=kn&sort_by=popularity.desc', type: 'movie', icon: '🎬' },
+  { name: 'punjabi-movies', url: '/discover/movie?with_original_language=pa&sort_by=popularity.desc', type: 'movie', icon: '🎬' },
   { name: 'korean-movies', url: '/discover/movie?with_original_language=ko&sort_by=popularity.desc', type: 'movie', icon: '🇰🇷' },
   { name: 'japanese-movies', url: '/discover/movie?with_original_language=ja&sort_by=popularity.desc&without_genres=16', type: 'movie', icon: '🇯🇵' },
   { name: 'chinese-movies', url: '/discover/movie?with_original_language=zh&sort_by=popularity.desc', type: 'movie', icon: '🇨🇳' },
@@ -177,6 +196,13 @@ const CATEGORIES = [
   { name: 'turkish-movies', url: '/discover/movie?with_original_language=tr&sort_by=popularity.desc', type: 'movie', icon: '🇹🇷' },
   { name: 'thai-movies', url: '/discover/movie?with_original_language=th&sort_by=popularity.desc', type: 'movie', icon: '🇹🇭' },
   { name: 'arabic-movies', url: '/discover/movie?with_original_language=ar&sort_by=popularity.desc', type: 'movie', icon: '🇸🇦' },
+  { name: 'portuguese-movies', url: '/discover/movie?with_original_language=pt&sort_by=popularity.desc', type: 'movie', icon: '🇵🇹' },
+  { name: 'dutch-movies', url: '/discover/movie?with_original_language=nl&sort_by=popularity.desc', type: 'movie', icon: '🇳🇱' },
+  { name: 'indonesian-movies', url: '/discover/movie?with_original_language=id&sort_by=popularity.desc', type: 'movie', icon: '🇮🇩' },
+  { name: 'vietnamese-movies', url: '/discover/movie?with_original_language=vi&sort_by=popularity.desc', type: 'movie', icon: '🇻🇳' },
+  { name: 'polish-movies', url: '/discover/movie?with_original_language=pl&sort_by=popularity.desc', type: 'movie', icon: '🇵🇱' },
+
+  // Regional TV
   { name: 'korean-drama', url: '/discover/tv?with_original_language=ko&sort_by=popularity.desc', type: 'tv', icon: '🇰🇷' },
   { name: 'chinese-drama', url: '/discover/tv?with_original_language=zh&sort_by=popularity.desc', type: 'tv', icon: '🇨🇳' },
   { name: 'japanese-drama', url: '/discover/tv?with_original_language=ja&sort_by=popularity.desc&without_genres=16', type: 'tv', icon: '🇯🇵' },
@@ -184,6 +210,10 @@ const CATEGORIES = [
   { name: 'thai-drama', url: '/discover/tv?with_original_language=th&sort_by=popularity.desc', type: 'tv', icon: '🇹🇭' },
   { name: 'hindi-tv', url: '/discover/tv?with_original_language=hi&sort_by=popularity.desc', type: 'tv', icon: '🇮🇳' },
   { name: 'spanish-tv', url: '/discover/tv?with_original_language=es&sort_by=popularity.desc', type: 'tv', icon: '🇪🇸' },
+  { name: 'french-tv', url: '/discover/tv?with_original_language=fr&sort_by=popularity.desc', type: 'tv', icon: '🇫🇷' },
+  { name: 'german-tv', url: '/discover/tv?with_original_language=de&sort_by=popularity.desc', type: 'tv', icon: '🇩🇪' },
+
+  // Movie genres
   { name: 'action', url: '/discover/movie?with_genres=28&sort_by=popularity.desc', type: 'movie', icon: '💥' },
   { name: 'comedy', url: '/discover/movie?with_genres=35&sort_by=popularity.desc', type: 'movie', icon: '😂' },
   { name: 'horror', url: '/discover/movie?with_genres=27&sort_by=popularity.desc', type: 'movie', icon: '👻' },
@@ -197,12 +227,26 @@ const CATEGORIES = [
   { name: 'family', url: '/discover/movie?with_genres=10751&sort_by=popularity.desc', type: 'movie', icon: '👨‍👩‍👧' },
   { name: 'war', url: '/discover/movie?with_genres=10752&sort_by=popularity.desc', type: 'movie', icon: '⚔️' },
   { name: 'history', url: '/discover/movie?with_genres=36&sort_by=popularity.desc', type: 'movie', icon: '📜' },
+  { name: 'western', url: '/discover/movie?with_genres=37&sort_by=popularity.desc', type: 'movie', icon: '🤠' },
+  { name: 'music', url: '/discover/movie?with_genres=10402&sort_by=popularity.desc', type: 'movie', icon: '🎵' },
+  { name: 'adventure', url: '/discover/movie?with_genres=12&sort_by=popularity.desc', type: 'movie', icon: '🗺️' },
+
+  // TV genres
   { name: 'action-tv', url: '/discover/tv?with_genres=10759&sort_by=popularity.desc', type: 'tv', icon: '💥' },
   { name: 'comedy-tv', url: '/discover/tv?with_genres=35&sort_by=popularity.desc', type: 'tv', icon: '😂' },
   { name: 'drama-tv', url: '/discover/tv?with_genres=18&sort_by=popularity.desc', type: 'tv', icon: '🎭' },
   { name: 'scifi-tv', url: '/discover/tv?with_genres=10765&sort_by=popularity.desc', type: 'tv', icon: '🚀' },
   { name: 'reality-tv', url: '/discover/tv?with_genres=10764&sort_by=popularity.desc', type: 'tv', icon: '🎤' },
   { name: 'talk-show', url: '/discover/tv?with_genres=10767&sort_by=popularity.desc', type: 'tv', icon: '🗣️' },
+  { name: 'mystery-tv', url: '/discover/tv?with_genres=9648&sort_by=popularity.desc', type: 'tv', icon: '🕵️' },
+  { name: 'animation-tv', url: '/discover/tv?with_genres=16&sort_by=popularity.desc', type: 'tv', icon: '🎨' },
+  { name: 'documentary-tv', url: '/discover/tv?with_genres=99&sort_by=popularity.desc', type: 'tv', icon: '📖' },
+  { name: 'kids-tv', url: '/discover/tv?with_genres=10762&sort_by=popularity.desc', type: 'tv', icon: '🧒' },
+  { name: 'news-tv', url: '/discover/tv?with_genres=10763&sort_by=popularity.desc', type: 'tv', icon: '📰' },
+  { name: 'soap-tv', url: '/discover/tv?with_genres=10766&sort_by=popularity.desc', type: 'tv', icon: '🧼' },
+  { name: 'war-tv', url: '/discover/tv?with_genres=10768&sort_by=popularity.desc', type: 'tv', icon: '⚔️' },
+
+  // Studios / Companies
   { name: 'marvel', url: '/discover/movie?with_companies=420&sort_by=popularity.desc', type: 'movie', icon: '🦸' },
   { name: 'dc', url: '/discover/movie?with_companies=9993&sort_by=popularity.desc', type: 'movie', icon: '🦇' },
   { name: 'pixar', url: '/discover/movie?with_companies=3&sort_by=popularity.desc', type: 'movie', icon: '🎈' },
@@ -210,14 +254,18 @@ const CATEGORIES = [
   { name: 'a24', url: '/discover/movie?with_companies=41077&sort_by=popularity.desc', type: 'movie', icon: '🎞️' },
   { name: 'warner-bros', url: '/discover/movie?with_companies=174&sort_by=popularity.desc', type: 'movie', icon: '🎬' },
   { name: 'universal', url: '/discover/movie?with_companies=33&sort_by=popularity.desc', type: 'movie', icon: '🌍' },
-  { name: 'sony', url: '/discover/movie?with_companies=5&sort_by=popularity.desc', type: 'movie', icon: '🎮' }
+  { name: 'sony', url: '/discover/movie?with_companies=5&sort_by=popularity.desc', type: 'movie', icon: '🎮' },
+  { name: 'paramount', url: '/discover/movie?with_companies=4&sort_by=popularity.desc', type: 'movie', icon: '⛰️' },
+  { name: 'dreamworks', url: '/discover/movie?with_companies=521&sort_by=popularity.desc', type: 'movie', icon: '🌙' },
+  { name: 'lionsgate', url: '/discover/movie?with_companies=1632&sort_by=popularity.desc', type: 'movie', icon: '🦁' },
+  { name: 'netflix-originals', url: '/discover/movie?with_companies=178464&sort_by=popularity.desc', type: 'movie', icon: '🎯' }
 ];
 
 async function syncCategories() {
   console.log('\n' + '═'.repeat(65));
   console.log(`📥 STEP 1: Fetching ${CATEGORIES.length} TMDB categories`);
   console.log('═'.repeat(65));
-  
+
   const dir = path.join(__dirname, '..', 'cache', 'tmdb', 'categories');
   fs.mkdirSync(dir, { recursive: true });
 
@@ -235,21 +283,22 @@ async function syncCategories() {
       const sep = cat.url.includes('?') ? '&' : '?';
       const url = BASE_TMDB + cat.url + sep + 'api_key=' + key + '&page=1';
       data = await fetchAPI(url);
-      
+
       if (data && data.results) break;
       if (data && data.__error) { attempts++; continue; }
-      break; 
+      if (data && data.id && !data.results) { data = { results: [data] }; break; } // for /latest endpoints
+      break;
     }
-    
+
     if (data && data.results) {
-      const clean = data.results.filter(r => r.poster_path);
+      const clean = data.results.filter(r => r && (r.poster_path || r.profile_path));
       saveJSON(path.join(dir, cat.name + '.json'), {
         results: clean, type: cat.type, updated: new Date().toISOString()
       });
       clean.forEach(item => {
-        let t = item.media_type || (cat.type === 'movie' ? 'movie' : 'tv');
-        if (t === 'movie') movieIds.add(item.id);
-        else if (t === 'tv') tvIds.add(item.id);
+        let t = item.media_type || (cat.type === 'movie' ? 'movie' : cat.type === 'tv' ? 'tv' : null);
+        if (t === 'movie' && item.id) movieIds.add(item.id);
+        else if (t === 'tv' && item.id) tvIds.add(item.id);
       });
       console.log(`✅ ${cat.icon} ${cat.name} (${clean.length} items)`);
     } else {
@@ -261,13 +310,13 @@ async function syncCategories() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 2: TMDB DETAILS
+   📥 STEP 2: TMDB DETAILS + OMDb + Watchmode + Fanart Enrichment
 ═══════════════════════════════════════════════════════════════ */
 async function syncMovieDetails(movieIds) {
   console.log('\n' + '═'.repeat(65));
   console.log(`📥 STEP 2A: Movie Details + Enrichment (Max ${MOVIES_PER_SYNC})`);
   console.log('═'.repeat(65));
-  
+
   const dir = path.join(__dirname, '..', 'cache', 'tmdb', 'movies');
   fs.mkdirSync(dir, { recursive: true });
   const ids = movieIds.slice(0, MOVIES_PER_SYNC);
@@ -285,29 +334,29 @@ async function syncMovieDetails(movieIds) {
       if (!key) break;
       const url = BASE_TMDB + '/movie/' + id + '?api_key=' + key + '&append_to_response=credits,external_ids,videos,images,watch/providers,similar';
       tmdbData = await fetchAPI(url);
-      
+
       if (tmdbData && tmdbData.id) break;
       if (tmdbData && tmdbData.__error) { attempts++; continue; }
       break;
     }
 
     if (!tmdbData || !tmdbData.id) continue;
-    
-    let enriched = { tmdb: tmdbData, sources: { tmdb: true } };
+
+    const enriched = { tmdb: tmdbData, sources: { tmdb: true } };
     const imdbId = tmdbData.external_ids?.imdb_id;
 
     if (imdbId) {
-      const [omdb, watchmode] = await Promise.all([ fetchOMDb(imdbId), fetchWatchmode(imdbId) ]);
+      const [omdb, watchmode] = await Promise.all([fetchOMDb(imdbId), fetchWatchmode(imdbId)]);
       if (omdb) { enriched.omdb = omdb; enriched.sources.omdb = true; }
       if (watchmode) { enriched.watchmode = watchmode; enriched.sources.watchmode = true; }
     }
-    
+
     const fanart = await fetchFanart(id, 'movies');
     if (fanart) { enriched.fanart = fanart; enriched.sources.fanart = true; }
 
     saveJSON(filePath, enriched);
     const sourcesUsed = Object.keys(enriched.sources).join(', ');
-    console.log(`[${i+1}/${ids.length}] ✅ ${tmdbData.title} (Merged: ${sourcesUsed})`);
+    console.log(`[${i + 1}/${ids.length}] ✅ ${tmdbData.title} (Merged: ${sourcesUsed})`);
     await new Promise(r => setTimeout(r, 250));
   }
 }
@@ -316,7 +365,7 @@ async function syncTVDetails(tvIds) {
   console.log('\n' + '═'.repeat(65));
   console.log(`📥 STEP 2B: TV Details + Enrichment (Max ${TV_PER_SYNC})`);
   console.log('═'.repeat(65));
-  
+
   const dir = path.join(__dirname, '..', 'cache', 'tmdb', 'tv');
   fs.mkdirSync(dir, { recursive: true });
   const ids = tvIds.slice(0, TV_PER_SYNC);
@@ -334,208 +383,244 @@ async function syncTVDetails(tvIds) {
       if (!key) break;
       const url = BASE_TMDB + '/tv/' + id + '?api_key=' + key + '&append_to_response=credits,external_ids,videos,images,watch/providers,similar';
       tmdbData = await fetchAPI(url);
-      
+
       if (tmdbData && tmdbData.id) break;
       if (tmdbData && tmdbData.__error) { attempts++; continue; }
       break;
     }
 
     if (!tmdbData || !tmdbData.id) continue;
-    
-    let enriched = { tmdb: tmdbData, sources: { tmdb: true } };
+
+    const enriched = { tmdb: tmdbData, sources: { tmdb: true } };
     const imdbId = tmdbData.external_ids?.imdb_id;
 
     if (imdbId) {
-      const [omdb, watchmode] = await Promise.all([ fetchOMDb(imdbId), fetchWatchmode(imdbId) ]);
+      const [omdb, watchmode] = await Promise.all([fetchOMDb(imdbId), fetchWatchmode(imdbId)]);
       if (omdb) { enriched.omdb = omdb; enriched.sources.omdb = true; }
       if (watchmode) { enriched.watchmode = watchmode; enriched.sources.watchmode = true; }
     }
-    
+
     const fanart = await fetchFanart(id, 'tv');
     if (fanart) { enriched.fanart = fanart; enriched.sources.fanart = true; }
 
     saveJSON(filePath, enriched);
     const sourcesUsed = Object.keys(enriched.sources).join(', ');
-    console.log(`[${i+1}/${ids.length}] ✅ ${tmdbData.name} (Merged: ${sourcesUsed})`);
+    console.log(`[${i + 1}/${ids.length}] ✅ ${tmdbData.name} (Merged: ${sourcesUsed})`);
     await new Promise(r => setTimeout(r, 250));
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 3: ANILIST
+   📥 STEP 3: ANILIST — 11 CATEGORIES
 ═══════════════════════════════════════════════════════════════ */
 async function syncAniList() {
   console.log('\n' + '═'.repeat(65));
-  console.log('📥 STEP 3: Syncing AniList (Anime + Trailers)');
+  console.log('📥 STEP 3: Syncing AniList (11 Categories)');
   console.log('═'.repeat(65));
-  
+
   const dir = path.join(__dirname, '..', 'cache', 'anilist');
   fs.mkdirSync(dir, { recursive: true });
-  
+
+  const currentYear = new Date().getFullYear();
+  const currentSeason = (() => {
+    const m = new Date().getMonth();
+    if (m < 3) return 'WINTER';
+    if (m < 6) return 'SPRING';
+    if (m < 9) return 'SUMMER';
+    return 'FALL';
+  })();
+
   const animeCategories = [
     { name: 'trending', sort: 'TRENDING_DESC' },
     { name: 'popular', sort: 'POPULARITY_DESC' },
     { name: 'top', sort: 'SCORE_DESC' },
     { name: 'movies', sort: 'POPULARITY_DESC', format: 'MOVIE' },
-    { name: 'this-season', sort: 'TRENDING_DESC' }
+    { name: 'tv-series', sort: 'POPULARITY_DESC', format: 'TV' },
+    { name: 'ova', sort: 'POPULARITY_DESC', format: 'OVA' },
+    { name: 'ona', sort: 'POPULARITY_DESC', format: 'ONA' },
+    { name: 'special', sort: 'POPULARITY_DESC', format: 'SPECIAL' },
+    { name: 'this-season', sort: 'TRENDING_DESC', season: currentSeason, seasonYear: currentYear },
+    { name: 'upcoming', sort: 'POPULARITY_DESC', status: 'NOT_YET_RELEASED' },
+    { name: 'airing', sort: 'POPULARITY_DESC', status: 'RELEASING' }
   ];
 
-  const query = `query($page:Int,$perPage:Int,$sort:[MediaSort],$format:MediaFormat){Page(page:$page,perPage:$perPage){media(sort:$sort,type:ANIME,format:$format,isAdult:false){id idMal title{romaji english native}coverImage{large extraLarge}bannerImage trailer{id site thumbnail} averageScore popularity startDate{year}format genres description episodes duration status studios{edges{node{name}}}}}}`;
+  const query = `query($page:Int,$perPage:Int,$sort:[MediaSort],$format:MediaFormat,$season:MediaSeason,$seasonYear:Int,$status:MediaStatus){
+    Page(page:$page,perPage:$perPage){
+      media(sort:$sort,type:ANIME,format:$format,isAdult:false,season:$season,seasonYear:$seasonYear,status:$status){
+        id idMal title{romaji english native}
+        coverImage{large extraLarge} bannerImage
+        trailer{id site thumbnail}
+        averageScore popularity startDate{year}
+        format genres description episodes duration status
+        studios{edges{node{name}}}
+      }
+    }
+  }`;
 
   for (const cat of animeCategories) {
     const variables = { page: 1, perPage: 50, sort: [cat.sort] };
     if (cat.format) variables.format = cat.format;
-    
+    if (cat.season) variables.season = cat.season;
+    if (cat.seasonYear) variables.seasonYear = cat.seasonYear;
+    if (cat.status) variables.status = cat.status;
+
     const data = await fetchGraphQL('https://graphql.anilist.co', query, variables);
-    if (data && data.data && data.data.Page) {
+    if (data && data.data && data.data.Page && Array.isArray(data.data.Page.media)) {
       saveJSON(path.join(dir, cat.name + '.json'), {
-        results: data.data.Page.media, type: 'anime', source: 'anilist'
+        results: data.data.Page.media, type: 'anime', source: 'anilist', updated: new Date().toISOString()
       });
       console.log(`✅ AniList ${cat.name}: ${data.data.Page.media.length} items`);
+    } else {
+      console.log(`❌ AniList ${cat.name} Failed`);
     }
-    await new Promise(r => setTimeout(r, 1000)); 
+    await new Promise(r => setTimeout(r, 1000));
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 4: TVMAZE
+   📥 STEP 4: TVMAZE — 5 CATEGORIES
 ═══════════════════════════════════════════════════════════════ */
 async function syncTVmaze() {
   console.log('\n' + '═'.repeat(65));
-  console.log('📥 STEP 4: Syncing TVmaze (Schedule)');
+  console.log('📥 STEP 4: Syncing TVmaze (5 Categories)');
   console.log('═'.repeat(65));
-  
-  try {
-    const res = await fetch('https://api.tvmaze.com/schedule', { headers: GLOBAL_HEADERS });
-    if (res.ok) {
-      const schedule = await res.json();
-      const clean = schedule.map(item => ({
-        id: item.id, show_id: item.show.id, show_name: item.show.name,
-        show_image: item.show.image?.medium || null, season: item.season,
-        episode: item.number, episode_name: item.name, airdate: item.airdate
-      }));
-      saveJSON(path.join(__dirname, '..', 'cache', 'tvmaze', 'schedule.json'), {
-        results: clean, type: 'schedule'
-      });
-      console.log(`✅ TVmaze: ${clean.length} episodes today`);
+
+  const dir = path.join(__dirname, '..', 'cache', 'tvmaze');
+  fs.mkdirSync(dir, { recursive: true });
+
+  const endpoints = [
+    { name: 'schedule', url: 'https://api.tvmaze.com/schedule', isSchedule: true },
+    { name: 'web-schedule', url: 'https://api.tvmaze.com/schedule/web', isSchedule: true },
+    { name: 'shows', url: 'https://api.tvmaze.com/shows?page=1' },
+    { name: 'search-popular', url: 'https://api.tvmaze.com/search/shows?q=popular' },
+    { name: 'people', url: 'https://api.tvmaze.com/people?page=1' }
+  ];
+
+  for (const ep of endpoints) {
+    try {
+      const res = await fetch(ep.url, { headers: GLOBAL_HEADERS });
+      if (res.ok) {
+        const data = await res.json();
+        const clean = ep.isSchedule && Array.isArray(data)
+          ? data.map(item => ({
+              id: item.id,
+              show_id: item.show?.id,
+              show_name: item.show?.name,
+              show_image: item.show?.image?.medium || null,
+              season: item.season,
+              episode: item.number,
+              episode_name: item.name,
+              airdate: item.airdate
+            }))
+          : data;
+
+        saveJSON(path.join(dir, ep.name + '.json'), {
+          results: clean, type: ep.name, updated: new Date().toISOString()
+        });
+        console.log(`✅ TVmaze ${ep.name}: ${clean.length} items`);
+      } else {
+        console.log(`❌ TVmaze ${ep.name} Failed: HTTP ${res.status}`);
+      }
+    } catch (e) {
+      console.log(`❌ TVmaze ${ep.name} Failed: ${e.message}`);
     }
-  } catch(e) { console.log('❌ TVmaze Failed'); }
+    await new Promise(r => setTimeout(r, 500));
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 5: JIKAN (FIXED with Headers & Retries)
+   📥 STEP 5: JIKAN — 7 CATEGORIES
 ═══════════════════════════════════════════════════════════════ */
 async function syncJikan() {
   console.log('\n' + '═'.repeat(65));
-  console.log('📥 STEP 5: Syncing Jikan (MyAnimeList)');
+  console.log('📥 STEP 5: Syncing Jikan (MyAnimeList) — 7 Categories');
   console.log('═'.repeat(65));
-  
+
   const dir = path.join(__dirname, '..', 'cache', 'jikan');
   fs.mkdirSync(dir, { recursive: true });
-  
-  // FIX 2: Added User-Agent header and retry logic for Jikan API
-  try {
-    const topRes = await fetch('https://api.jikan.moe/v4/top/anime?limit=25', { headers: GLOBAL_HEADERS });
-    if (topRes.ok) {
-      const data = await topRes.json();
-      saveJSON(path.join(dir, 'top.json'), { results: data.data, source: 'jikan' });
-      console.log(`✅ Jikan Top Anime: ${data.data.length} items`);
-    } else {
-      console.log(`❌ Jikan Top Failed: HTTP ${topRes.status}`);
-    }
-    
-    // Jikan requires at least 1.5 seconds delay between requests
-    await new Promise(r => setTimeout(r, 2000)); 
 
-    const airingRes = await fetch('https://api.jikan.moe/v4/seasons/now?limit=25', { headers: GLOBAL_HEADERS });
-    if (airingRes.ok) {
-      const data = await airingRes.json();
-      saveJSON(path.join(dir, 'airing.json'), { results: data.data, source: 'jikan' });
-      console.log(`✅ Jikan Airing Anime: ${data.data.length} items`);
-    } else {
-      console.log(`❌ Jikan Airing Failed: HTTP ${airingRes.status}`);
+  const endpoints = [
+    { name: 'top-overall', url: 'https://api.jikan.moe/v4/top/anime?limit=25' },
+    { name: 'top-airing', url: 'https://api.jikan.moe/v4/top/anime?filter=airing&limit=25' },
+    { name: 'top-upcoming', url: 'https://api.jikan.moe/v4/top/anime?filter=upcoming&limit=25' },
+    { name: 'top-movies', url: 'https://api.jikan.moe/v4/top/anime?type=movie&limit=25' },
+    { name: 'season-now', url: 'https://api.jikan.moe/v4/seasons/now?limit=25' },
+    { name: 'season-upcoming', url: 'https://api.jikan.moe/v4/seasons/upcoming?limit=25' },
+    { name: 'schedule-today', url: 'https://api.jikan.moe/v4/schedules?day=today&limit=25' }
+  ];
+
+  for (const ep of endpoints) {
+    try {
+      const res = await fetch(ep.url, { headers: GLOBAL_HEADERS });
+      if (res.ok) {
+        const data = await res.json();
+        saveJSON(path.join(dir, ep.name + '.json'), {
+          results: data.data || [], source: 'jikan', updated: new Date().toISOString()
+        });
+        console.log(`✅ Jikan ${ep.name}: ${(data.data || []).length} items`);
+      } else {
+        console.log(`❌ Jikan ${ep.name} Failed: HTTP ${res.status}`);
+      }
+    } catch (e) {
+      console.log(`❌ Jikan ${ep.name} Failed: ${e.message}`);
     }
-  } catch(e) { console.log('❌ Jikan Failed: ' + e.message); }
+    // Jikan rate limit: 3 req/sec → 2s safe gap
+    await new Promise(r => setTimeout(r, 2000));
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 6: KITSU
+   📥 STEP 6: KITSU — 4 CATEGORIES
 ═══════════════════════════════════════════════════════════════ */
 async function syncKitsu() {
   console.log('\n' + '═'.repeat(65));
-  console.log('📥 STEP 6: Syncing Kitsu (AnimeDoc)');
+  console.log('📥 STEP 6: Syncing Kitsu (Animedoc) — 4 Categories');
   console.log('═'.repeat(65));
-  
-  try {
-    const res = await fetch('https://kitsu.io/api/edge/trending/anime', { headers: GLOBAL_HEADERS });
-    if (res.ok) {
-      const data = await res.json();
-      saveJSON(path.join(__dirname, '..', 'cache', 'kitsu', 'trending.json'), {
-        results: data.data, source: 'kitsu'
-      });
-      console.log(`✅ Kitsu Trending: ${data.data.length} items`);
-    }
-  } catch(e) { console.log('❌ Kitsu Failed'); }
-}
 
-/* ═══════════════════════════════════════════════════════════════
-   📥 STEP 7: SIMKL (FIXED with app-name headers)
-═══════════════════════════════════════════════════════════════ */
-async function syncSimkl() {
-  console.log('\n' + '═'.repeat(65));
-  console.log('📥 STEP 7: Syncing Simkl');
-  console.log('═'.repeat(65));
-  
-  let attempts = 0;
-  const maxAttempts = KEYS.simkl.length || 1;
-  if (maxAttempts === 0) { console.log('⚠️ Simkl skipped (No SIMKL_CLIENT_ID)'); return; }
+  const dir = path.join(__dirname, '..', 'cache', 'kitsu');
+  fs.mkdirSync(dir, { recursive: true });
 
-  while (attempts < maxAttempts) {
-    const clientId = getKey('simkl');
-    if (!clientId) return;
+  const endpoints = [
+    { name: 'trending', url: 'https://kitsu.io/api/edge/trending/anime' },
+    { name: 'top-rated', url: 'https://kitsu.io/api/edge/anime?sort=ratingRank&page[limit]=20' },
+    { name: 'popular', url: 'https://kitsu.io/api/edge/anime?sort=popularityRank&page[limit]=20' },
+    { name: 'categories', url: 'https://kitsu.io/api/edge/categories?page[limit]=50' }
+  ];
 
+  for (const ep of endpoints) {
     try {
-      // FIX 3: Added proper headers required by Simkl API
-      const res = await fetch(`https://api.simkl.com/movies/trending/?client_id=${clientId}&extended=full`, {
-        headers: { 
-          ...GLOBAL_HEADERS,
-          'app-name': 'CineVault',
-          'app-version': '10.5',
-          'simkl-api-key': clientId 
-        }
-      });
-      
+      const res = await fetch(ep.url, { headers: GLOBAL_HEADERS });
       if (res.ok) {
         const data = await res.json();
-        saveJSON(path.join(__dirname, '..', 'cache', 'simkl', 'trending.json'), {
-          results: data.slice(0, 50), source: 'simkl'
+        saveJSON(path.join(dir, ep.name + '.json'), {
+          results: data.data || [], source: 'kitsu', updated: new Date().toISOString()
         });
-        console.log(`✅ Simkl Trending Movies: ${data.length} items`);
-        return;
-      } else if (res.status === 401 || res.status === 403) {
-        logKeyFailure('simkl', clientId, res.status);
-        attempts++; continue;
+        console.log(`✅ Kitsu ${ep.name}: ${(data.data || []).length} items`);
       } else {
-        console.log(`❌ Simkl returned HTTP ${res.status}`);
-        attempts++; continue;
+        console.log(`❌ Kitsu ${ep.name} Failed: HTTP ${res.status}`);
       }
-    } catch(e) { attempts++; }
+    } catch (e) {
+      console.log(`❌ Kitsu ${ep.name} Failed: ${e.message}`);
+    }
+    await new Promise(r => setTimeout(r, 500));
   }
-  console.log('❌ Simkl Failed after all retries');
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   📥 STEP 8: THETVDB
+   📥 STEP 7: THETVDB — 4 CATEGORIES (JWT Login)
 ═══════════════════════════════════════════════════════════════ */
 async function syncTheTVDB() {
   console.log('\n' + '═'.repeat(65));
-  console.log('📥 STEP 8: Syncing TheTVDB');
+  console.log('📥 STEP 7: Syncing TheTVDB — 4 Categories');
   console.log('═'.repeat(65));
-  
-  let attempts = 0;
+
+  const dir = path.join(__dirname, '..', 'cache', 'tvdb');
+  fs.mkdirSync(dir, { recursive: true });
+
   const maxAttempts = KEYS.tvdb.length || 1;
   if (maxAttempts === 0) { console.log('⚠️ TheTVDB skipped (No TVDB_API_KEY)'); return; }
 
+  let attempts = 0;
   while (attempts < maxAttempts) {
     const apiKey = getKey('tvdb');
     if (!apiKey) return;
@@ -546,27 +631,46 @@ async function syncTheTVDB() {
         headers: { ...GLOBAL_HEADERS, 'Content-Type': 'application/json' },
         body: JSON.stringify({ apikey: apiKey })
       });
-      
+
       const loginData = await loginRes.json();
       if (!loginData.data || !loginData.data.token) {
         logKeyFailure('tvdb', apiKey, loginRes.status);
         attempts++; continue;
       }
-      
+
       const token = loginData.data.token;
-      const seriesRes = await fetch('https://api4.thetvdb.com/v4/series/filter?lang=eng&sort=lastUpdated&sortType=desc', {
-        headers: { ...GLOBAL_HEADERS, 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (seriesRes.ok) {
-        const seriesData = await seriesRes.json();
-        saveJSON(path.join(__dirname, '..', 'cache', 'tvdb', 'latest.json'), {
-          results: seriesData.data.slice(0, 50), source: 'tvdb'
-        });
-        console.log(`✅ TheTVDB Latest Series: 50 items`);
-        return;
+
+      const endpoints = [
+        { name: 'latest-series', url: 'https://api4.thetvdb.com/v4/series/filter?lang=eng&sort=lastUpdated&sortType=desc' },
+        { name: 'action-series', url: 'https://api4.thetvdb.com/v4/series/filter?genre=Action&lang=eng' },
+        { name: 'movies', url: 'https://api4.thetvdb.com/v4/movies?page=0' },
+        { name: 'search-series', url: 'https://api4.thetvdb.com/v4/search?query=popular&type=series' }
+      ];
+
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep.url, {
+            headers: { ...GLOBAL_HEADERS, 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const arr = Array.isArray(data.data) ? data.data : (data.data?.series || []);
+            saveJSON(path.join(dir, ep.name + '.json'), {
+              results: arr.slice(0, 50), source: 'tvdb', updated: new Date().toISOString()
+            });
+            console.log(`✅ TheTVDB ${ep.name}: ${Math.min(arr.length, 50)} items`);
+          } else {
+            console.log(`❌ TheTVDB ${ep.name} Failed: HTTP ${res.status}`);
+          }
+        } catch (e) {
+          console.log(`❌ TheTVDB ${ep.name} Failed: ${e.message}`);
+        }
+        await new Promise(r => setTimeout(r, 500));
       }
-    } catch(e) { attempts++; }
+      return; // success → exit
+    } catch (e) {
+      attempts++;
+    }
   }
   console.log('❌ TheTVDB Failed after all retries');
 }
@@ -578,18 +682,18 @@ function printReport() {
   console.log('\n' + '═'.repeat(65));
   console.log('🔑 API KEY USAGE REPORT');
   console.log('═'.repeat(65));
-  
-  ['tmdb', 'omdb', 'watchmode', 'fanart', 'simkl', 'tvdb'].forEach(pool => {
+
+  ['tmdb', 'omdb', 'watchmode', 'fanart', 'tvdb'].forEach(pool => {
     const keys = KEYS[pool];
     if (!keys || !keys.length) return;
-    
+
     const total = Object.values(keyStats[pool]).reduce((a, b) => a + b, 0);
     if (total === 0) return;
 
     console.log(`\n[${pool.toUpperCase()}] Total Calls: ${total} | Keys: ${keys.length}`);
     keys.forEach((k, i) => {
       const used = keyStats[pool][k] || 0;
-      if (used > 0) console.log(`  #${String(i+1).padStart(2, '0')} ${maskKey(k)} → ${used} calls`);
+      if (used > 0) console.log(`  #${String(i + 1).padStart(2, '0')} ${maskKey(k)} → ${used} calls`);
     });
   });
 }
@@ -597,14 +701,14 @@ function printReport() {
 /* ═══════════════════════════════════════════════════════════════
    🚀 MAIN EXECUTION
 ═══════════════════════════════════════════════════════════════ */
-(async function(){
+(async function () {
   const startTime = Date.now();
-  
+
   console.log('╔' + '═'.repeat(63) + '╗');
-  console.log('║' + ' '.repeat(6) + '🎬 CINEVAULT SYNC ENGINE v10.5' + ' '.repeat(18) + '║');
-  console.log('║' + ' '.repeat(3) + 'Explicit Merge • 10 DBs • Zero Data Loss' + ' '.repeat(11) + '║');
+  console.log('║' + ' '.repeat(6) + '🎬 CINEVAULT SYNC ENGINE v10.6' + ' '.repeat(18) + '║');
+  console.log('║' + ' '.repeat(3) + '9 Sources • Full Categories • Zero Data Loss' + ' '.repeat(9) + '║');
   console.log('╚' + '═'.repeat(63) + '╝');
-  
+
   if (!KEYS.tmdb.length) {
     console.error('❌ FATAL: No TMDB keys provided. Set TMDB_KEYS in env.');
     process.exit(1);
@@ -615,23 +719,21 @@ function printReport() {
     await syncMovieDetails(movieIds);
     await syncTVDetails(tvIds);
     await syncAniList();
+    await syncTVmaze();
     await syncJikan();
     await syncKitsu();
-    await syncTVmaze();
-    await syncSimkl();
     await syncTheTVDB();
 
     saveJSON(path.join(__dirname, '..', 'cache', '_meta.json'), {
       updated: new Date().toISOString(),
-      version: '10.5',
-      sources: ['tmdb', 'anilist', 'tvmaze', 'jikan', 'kitsu', 'simkl', 'tvdb', 'omdb', 'watchmode', 'fanart'],
+      version: '10.6',
+      sources: ['tmdb', 'anilist', 'tvmaze', 'jikan', 'kitsu', 'tvdb', 'omdb', 'watchmode', 'fanart'],
       timestamp: Date.now()
     });
-    
+
     printReport();
-    console.log('\n🎉 ALL SOURCES SYNC COMPLETE in ' + ((Date.now() - startTime) / 1000).toFixed(1) + 's');
-    
-  } catch(err) {
+    console.log('\n🎉 ALL 9 SOURCES SYNC COMPLETE in ' + ((Date.now() - startTime) / 1000).toFixed(1) + 's');
+  } catch (err) {
     console.error('\n❌ FATAL ERROR: ' + err.message);
     process.exit(1);
   }
